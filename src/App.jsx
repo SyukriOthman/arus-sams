@@ -1,19 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from './supabaseClient';
+import Auth from './Auth';
 
 function App() {
+  const [session, setSession] = useState(null);
   const [currentTab, setCurrentTab] = useState('dashboard');
 
+  useEffect(() => {
+    // Check active session on load
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    // Listen for login/logout events
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+  };
+
+  // IF NOT LOGGED IN: Show the Auth Screen
+  if (!session) {
+    return <Auth />;
+  }
+
+  // IF LOGGED IN: Show the main application
   return (
     <div className="flex h-screen bg-slate-100 font-sans">
       
       {/* SIDEBAR NAVIGATION */}
-      <div className="w-64 bg-slate-900 text-white p-6 shadow-xl z-10">
+      <div className="w-64 bg-slate-900 text-white p-6 shadow-xl z-10 flex flex-col">
         <h1 className="text-2xl font-bold text-teal-400 mb-8 border-b border-slate-700 pb-4">Arus-SAMS</h1>
-        <div className="space-y-3">
+        <div className="space-y-3 flex-1">
           <button onClick={() => setCurrentTab('dashboard')} className={`block w-full text-left px-4 py-3 rounded transition-colors ${currentTab === 'dashboard' ? 'bg-teal-600' : 'hover:bg-slate-800'}`}>🖥️ Admin Dashboard</button>
           <button onClick={() => setCurrentTab('mobile-audit')} className={`block w-full text-left px-4 py-3 rounded transition-colors ${currentTab === 'mobile-audit' ? 'bg-teal-600' : 'hover:bg-slate-800'}`}>📱 Mobile QR Audit</button>
           <button onClick={() => setCurrentTab('simulator')} className={`block w-full text-left px-4 py-3 rounded transition-colors ${currentTab === 'simulator' ? 'bg-teal-600' : 'hover:bg-slate-800'}`}>⚙️ iHYDRO Simulator</button>
         </div>
+        
+        {/* LOGOUT BUTTON */}
+        <button onClick={handleSignOut} className="mt-auto block w-full text-left px-4 py-3 text-red-400 hover:bg-slate-800 rounded transition-colors">
+          🚪 Sign Out
+        </button>
       </div>
 
       {/* DYNAMIC CONTENT AREA */}
