@@ -3,6 +3,7 @@ import { supabase } from './supabaseClient';
 import Auth from './Auth';
 import AdminDashboard from './AdminDashboard';
 import SuperAdminDashboard from './SuperAdminDashboard'; 
+import SchoolProfile from './SchoolProfile'; 
 
 function App() {
   const [session, setSession] = useState(null);
@@ -141,9 +142,13 @@ function App() {
               ⚙️ iHYDRO Simulation Panel
             </button>
 
+            <button onClick={() => setCurrentTab('school')} className={`block w-full text-left px-4 py-3 rounded transition-colors ${currentTab === 'school' ? 'bg-teal-600 font-medium' : 'hover:bg-slate-800 text-slate-300'}`}>
+              🏫 School Profile
+            </button>
+
             {userRole === 'headmaster' && (
               <button onClick={() => setCurrentTab('admin-management')} className={`block w-full text-left px-4 py-3 rounded transition-colors border-t border-slate-800 mt-4 pt-4 ${currentTab === 'admin-management' ? 'bg-teal-600 font-medium' : 'hover:bg-slate-800 text-slate-300'}`}>
-                👥 Register School Staff
+                👥 Manage School Staff
               </button>
             )}
 
@@ -164,6 +169,7 @@ function App() {
       <div className="flex-1 p-10 overflow-y-auto pt-16">
         {userRole === 'superadmin' && currentTab === 'super-dashboard' && <SuperAdminDashboard />}
         {userRole === 'headmaster' && currentTab === 'admin-management' && <AdminDashboard schoolId={userSchoolId} />}
+        {userRole === 'headmaster' && currentTab === 'school' && <SchoolProfile school_id={userSchoolId} />}
 
         {/* FEATURE 1 */}
         {currentTab === 'dashboard' && (
