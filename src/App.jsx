@@ -5,6 +5,7 @@ import AdminDashboard from "./AdminDashboard";
 import SuperAdminDashboard from "./SuperAdminDashboard";
 import SchoolProfile from "./SchoolProfile";
 import UserProfile from "./UserProfile";
+import LocationManager from "./pages/LocationManager";
 
 function App() {
   const [session, setSession] = useState(null);
@@ -12,12 +13,7 @@ function App() {
   const [userSchoolId, setUserSchoolId] = useState(null);
   const [currentTab, setCurrentTab] = useState("mobile-audit");
 
-  // Core Demo Features
   const [isCritical, setIsCritical] = useState(false);
-  const [locations, setLocations] = useState([]);
-  const [blockName, setBlockName] = useState("");
-  const [roomNumber, setRoomNumber] = useState("");
-  const [elevation, setElevation] = useState("");
   const [scannedAssetId, setScannedAssetId] = useState("");
   const [auditStatus, setAuditStatus] = useState("Good");
 
@@ -46,7 +42,6 @@ function App() {
     const roleStr = userData.role.toLowerCase().trim();
     setUserRole(roleStr);
     setUserSchoolId(userData.school_id);
-    fetchLocations(userData.school_id);
 
     if (roleStr === "superadmin") setCurrentTab("super-dashboard");
     else if (roleStr === "headmaster") setCurrentTab("admin-management");
@@ -60,40 +55,10 @@ function App() {
     localStorage.removeItem("demo_session");
   };
 
-  // Allows child components (like UserProfile) to update the global session state
   const handleSessionUpdate = (updatedFields) => {
     const updatedSession = { ...session, ...updatedFields };
     setSession(updatedSession);
     localStorage.setItem("demo_session", JSON.stringify(updatedSession));
-  };
-
-  const fetchLocations = async (schoolId) => {
-    if (!schoolId) return;
-    const { data, error } = await supabase
-      .from("locations")
-      .select("id, block_name, room_number, elevation_meters, school_id")
-      .eq("school_id", schoolId);
-    if (!error && data) setLocations(data);
-  };
-
-  const handleAddLocation = async (e) => {
-    e.preventDefault();
-    if (!userSchoolId) return;
-    const { error } = await supabase.from("locations").insert([
-      {
-        block_name: blockName,
-        room_number: roomNumber,
-        elevation_meters: parseFloat(elevation),
-        school_id: userSchoolId,
-      },
-    ]);
-    if (!error) {
-      alert("Elevation registry updated successfully!");
-      setBlockName("");
-      setRoomNumber("");
-      setElevation("");
-      fetchLocations(userSchoolId);
-    }
   };
 
   const toggleFloodSimulation = async (statusValue) => {
@@ -132,10 +97,9 @@ function App() {
         </div>
       )}
 
-      {/* SIDEBAR MENU */}
+      {/* SIDEBAR */}
       <div className="w-72 bg-slate-900 text-white p-6 flex flex-col justify-between shadow-2xl z-10">
         <div className="space-y-6">
-          {/* CLICKABLE PROFILE WIDGET */}
           <div className="border-b border-slate-800 pb-6">
             <h1 className="text-2xl font-bold tracking-tight text-teal-400 mb-5">
               Arus-SAMS
@@ -154,15 +118,11 @@ function App() {
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold border border-teal-500 shadow-inner">
-                  {session.full_name
-                    ? session.full_name.charAt(0).toUpperCase()
-                    : "U"}
+                  {session.full_name ? session.full_name.charAt(0).toUpperCase() : "U"}
                 </div>
               )}
               <div className="overflow-hidden flex-1">
-                <p className="text-sm font-bold text-white truncate">
-                  {session.full_name}
-                </p>
+                <p className="text-sm font-bold text-white truncate">{session.full_name}</p>
                 <p className="text-xs text-teal-400 capitalize truncate">
                   {session.role.replace("_", " ")}
                 </p>
@@ -170,13 +130,12 @@ function App() {
             </button>
           </div>
 
-          {/* NAVIGATION BUTTONS */}
           <div className="space-y-1">
             <button
-              onClick={() => setCurrentTab("dashboard")}
-              className={`block w-full text-left px-4 py-3 rounded transition-colors ${currentTab === "dashboard" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
+              onClick={() => setCurrentTab("locations")}
+              className={`block w-full text-left px-4 py-3 rounded transition-colors ${currentTab === "locations" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
             >
-              📐 Elevation Registry
+              📐 Location Manager
             </button>
 
             <button
@@ -230,120 +189,28 @@ function App() {
         </button>
       </div>
 
-      {/* CORE DISPLAY */}
+      {/* MAIN CONTENT */}
       <div className="flex-1 p-10 overflow-y-auto pt-16">
-        {/* USER PROFILE ROUTE */}
         {currentTab === "my-profile" && (
-          <UserProfile
-            session={session}
-            onSessionUpdate={handleSessionUpdate}
-          />
+          <UserProfile session={session} onSessionUpdate={handleSessionUpdate} />
         )}
 
         {userRole === "superadmin" && currentTab === "super-dashboard" && (
           <SuperAdminDashboard />
         )}
+
         {userRole === "headmaster" && currentTab === "admin-management" && (
           <AdminDashboard schoolId={userSchoolId} />
         )}
+
         {currentTab === "school" && (
           <SchoolProfile school_id={userSchoolId} userRole={userRole} />
         )}
 
-        {/* FEATURE 1 */}
-        {currentTab === "dashboard" && (
-          <div className="max-w-5xl mx-auto space-y-6">
-            <h2 className="text-3xl font-bold text-slate-800">
-              Location & Elevation Registry
-            </h2>
-            <div className="bg-white p-6 rounded-xl shadow border border-slate-200">
-              <form
-                onSubmit={handleAddLocation}
-                className="grid grid-cols-4 gap-4 items-end"
-              >
-                <input
-                  type="text"
-                  placeholder="Building Block (e.g., Block A)"
-                  value={blockName}
-                  onChange={(e) => setBlockName(e.target.value)}
-                  className="border p-2 rounded"
-                  required
-                />
-                <input
-                  type="text"
-                  placeholder="Room Identifier (e.g., Lab G01)"
-                  value={roomNumber}
-                  onChange={(e) => setRoomNumber(e.target.value)}
-                  className="border p-2 rounded"
-                  required
-                />
-
-                {/* FIXED: Placeholder is now fully on one line! */}
-                <input
-                  type="number"
-                  step="0.01"
-                  placeholder="Vertical Offset (m)"
-                  value={elevation}
-                  onChange={(e) => setElevation(e.target.value)}
-                  className="border p-2 rounded"
-                  required
-                />
-
-                <button
-                  type="submit"
-                  className="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 rounded shadow h-10"
-                >
-                  Save Workspace Data
-                </button>
-              </form>
-            </div>
-            <div className="bg-white rounded-xl shadow border border-slate-200 overflow-hidden">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 border-b border-slate-200">
-                  <tr>
-                    <th className="p-4 font-bold text-slate-600 text-sm">
-                      Block
-                    </th>
-                    <th className="p-4 font-bold text-slate-600 text-sm">
-                      Room Spec
-                    </th>
-                    <th className="p-4 font-bold text-slate-600 text-sm">
-                      Elevation Vector
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 text-sm">
-                  {locations.length === 0 ? (
-                    <tr>
-                      <td
-                        colSpan="3"
-                        className="p-4 text-center text-slate-400"
-                      >
-                        No spatial arrays seeded.
-                      </td>
-                    </tr>
-                  ) : (
-                    locations.map((loc) => (
-                      <tr key={loc.id} className="hover:bg-slate-50">
-                        <td className="p-4 font-semibold text-slate-700">
-                          {loc.block_name}
-                        </td>
-                        <td className="p-4 text-slate-600">
-                          {loc.room_number}
-                        </td>
-                        <td className="p-4 font-bold text-blue-600">
-                          {loc.elevation_meters}m above datum
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+        {currentTab === "locations" && (
+          <LocationManager user={session} schoolId={userSchoolId} />
         )}
 
-        {/* FEATURE 3 */}
         {currentTab === "mobile-audit" && (
           <div className="max-w-md mx-auto mt-6">
             <h2 className="text-2xl font-bold text-slate-800 mb-6 text-center">
@@ -364,15 +231,9 @@ function App() {
                   onChange={(e) => setAuditStatus(e.target.value)}
                   className="border p-3 w-full rounded font-medium bg-slate-50"
                 >
-                  <option value="Good">
-                    🟢 Operational Verification (Good)
-                  </option>
-                  <option value="Damaged">
-                    🟡 Infrastructure Faulty (Damaged)
-                  </option>
-                  <option value="Submerged">
-                    🔴 Inundation Critical (Submerged)
-                  </option>
+                  <option value="Good">🟢 Operational Verification (Good)</option>
+                  <option value="Damaged">🟡 Infrastructure Faulty (Damaged)</option>
+                  <option value="Submerged">🔴 Inundation Critical (Submerged)</option>
                 </select>
                 <button
                   type="submit"
@@ -385,7 +246,6 @@ function App() {
           </div>
         )}
 
-        {/* FEATURE 2 */}
         {currentTab === "hydrological-simulator" && (
           <div className="max-w-xl mx-auto mt-6 bg-white p-8 rounded-xl shadow border border-slate-200">
             <h2 className="text-2xl font-bold text-slate-800 mb-2">
