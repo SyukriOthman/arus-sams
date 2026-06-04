@@ -1,86 +1,74 @@
 import React, { useState } from 'react';
 import { supabase } from './supabaseClient';
 
-export default function Auth() {
-  const [loading, setLoading] = useState(false);
+export default function Auth({ onDemoLogin }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLogin, setIsLogin] = useState(true);
-  const [message, setMessage] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleAuth = async (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage('');
 
-    try {
-      if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setMessage('Registration successful! You can now log in.');
-      }
-    } catch (error) {
-      setMessage(error.message);
-    } finally {
-      setLoading(false);
+    // Look inside your custom 'staff' table for the matching email and password
+    const { data, error } = await supabase
+      .from('staff')
+      .select('*')
+      .eq('email', email)
+      .eq('stored_password', password)
+      .single();
+
+    setLoading(false);
+
+    if (error || !data) {
+      alert('Invalid Email or Password. Please check with your Headmaster.');
+    } else {
+      // Success! Send the user's data to the main App
+      onDemoLogin(data);
     }
   };
 
   return (
-    <div className="flex items-center justify-center h-screen bg-slate-100">
-      <div className="bg-white p-8 rounded-xl shadow-lg w-96 border-t-4 border-teal-500">
-        <h2 className="text-2xl font-bold text-center text-slate-800 mb-6">
-          {isLogin ? 'Log in to Arus-SAMS' : 'Register for Arus-SAMS'}
-        </h2>
-        
-        <form onSubmit={handleAuth} className="space-y-4">
+    <div className="flex h-screen items-center justify-center bg-slate-900 font-sans">
+      <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-md border-t-4 border-teal-500 fade-in">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Arus-SAMS</h1>
+          <p className="text-sm text-slate-500 mt-2">Staff Access Portal</p>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-700">Email</label>
-            <input
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Institutional Email</label>
+            <input 
+              type="email" 
+              placeholder="e.g. teacher@school.edu.my" 
+              value={email} 
+              onChange={e => setEmail(e.target.value)} 
+              className="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none" 
+              required 
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-slate-700">Password</label>
-            <input
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500"
+            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Access Password</label>
+            <input 
+              type="password" 
+              placeholder="••••••••" 
+              value={password} 
+              onChange={e => setPassword(e.target.value)} 
+              className="w-full border border-slate-300 p-3 rounded-lg focus:ring-2 focus:ring-teal-500 outline-none" 
+              required 
             />
           </div>
-          
-          <button
-            type="submit"
+
+          <button 
+            type="submit" 
             disabled={loading}
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 disabled:opacity-50"
+            className="w-full bg-teal-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-teal-700 transition-colors"
           >
-            {loading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')}
+            {loading ? 'Authenticating...' : 'Secure Login'}
           </button>
         </form>
-
-        {message && (
-          <div className="mt-4 text-sm text-center font-medium text-red-600">
-            {message}
-          </div>
-        )}
-
-        <div className="mt-6 text-center">
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-sm text-teal-600 hover:text-teal-500"
-          >
-            {isLogin ? "Don't have an account? Sign Up" : "Already have an account? Log In"}
-          </button>
-        </div>
       </div>
     </div>
   );
