@@ -9,21 +9,17 @@ export default function AssetAnalytics({ assets, title = "📊 Asset Intelligenc
     );
   }
 
-  // Calculate high-level stats
   const totalAssets = assets.length;
-  const goodAssets = assets.filter((a) => a.status === "Good").length;
-  const damagedAssets = assets.filter((a) => a.status === "Damaged").length;
-  const submergedAssets = assets.filter((a) => a.status === "Submerged").length;
+  const activeAssets = assets.filter((a) => a.status === "Active" || a.status === "Safe").length;
+  const maintenanceAssets = assets.filter((a) => a.status === "Under Maintenance").length;
+  const lostDisposedAssets = assets.filter((a) => a.status === "Lost" || a.status === "Disposed").length;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold text-slate-800">
-          {title}
-        </h3>
+        <h3 className="text-xl font-bold text-slate-800">{title}</h3>
       </div>
 
-      {/* TOP STAT CARDS */}
       <div className="grid grid-cols-4 gap-6">
         {/* Total Assets */}
         <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6 flex flex-col justify-center items-center">
@@ -35,21 +31,21 @@ export default function AssetAnalytics({ assets, title = "📊 Asset Intelligenc
         <div className="bg-white rounded-xl shadow-md border-b-4 border-b-green-500 p-6 flex flex-col justify-center items-center relative overflow-hidden">
           <div className="absolute top-0 right-0 p-3 opacity-20 text-4xl">🟢</div>
           <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Operational</p>
-          <p className="text-4xl font-black text-green-600">{goodAssets}</p>
+          <p className="text-4xl font-black text-green-600">{activeAssets}</p>
         </div>
 
-        {/* Damaged */}
+        {/* Under Maintenance */}
         <div className="bg-white rounded-xl shadow-md border-b-4 border-b-yellow-500 p-6 flex flex-col justify-center items-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-3 opacity-20 text-4xl">🟡</div>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Damaged</p>
-          <p className="text-4xl font-black text-yellow-600">{damagedAssets}</p>
+          <div className="absolute top-0 right-0 p-3 opacity-20 text-4xl">🔧</div>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Under Maintenance</p>
+          <p className="text-4xl font-black text-yellow-600">{maintenanceAssets}</p>
         </div>
 
-        {/* Submerged / Critical */}
+        {/* Lost / Disposed */}
         <div className="bg-white rounded-xl shadow-md border-b-4 border-b-red-500 p-6 flex flex-col justify-center items-center relative overflow-hidden">
           <div className="absolute top-0 right-0 p-3 opacity-20 text-4xl">🚨</div>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Inundation Critical</p>
-          <p className="text-4xl font-black text-red-600">{submergedAssets}</p>
+          <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Lost / Disposed</p>
+          <p className="text-4xl font-black text-red-600">{lostDisposedAssets}</p>
         </div>
       </div>
     </div>
