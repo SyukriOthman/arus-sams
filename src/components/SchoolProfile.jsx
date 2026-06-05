@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "./supabaseClient";
+import { supabase } from "../supabaseClient";
 
 const SchoolProfile = ({ school_id, userRole }) => {
   // Added all the specific columns from your database schema

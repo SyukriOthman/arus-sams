@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { supabase } from "./supabaseClient";
 import Auth from "./Auth";
-import AdminDashboard from "./AdminDashboard";
-import SuperAdminDashboard from "./SuperAdminDashboard";
-import SchoolProfile from "./SchoolProfile";
-import UserProfile from "./UserProfile";
+import AdminDashboard from "./components/AdminDashboard";
+import SuperAdminDashboard from "./components/SuperAdminDashboard";
+import SchoolProfile from "./components/SchoolProfile";
+import UserProfile from "./components/UserProfile";
 import LocationManager from "./pages/LocationManager";
 
 function App() {
@@ -118,11 +118,15 @@ function App() {
                 />
               ) : (
                 <div className="w-10 h-10 rounded-full bg-teal-600 flex items-center justify-center text-white font-bold border border-teal-500 shadow-inner">
-                  {session.full_name ? session.full_name.charAt(0).toUpperCase() : "U"}
+                  {session.full_name
+                    ? session.full_name.charAt(0).toUpperCase()
+                    : "U"}
                 </div>
               )}
               <div className="overflow-hidden flex-1">
-                <p className="text-sm font-bold text-white truncate">{session.full_name}</p>
+                <p className="text-sm font-bold text-white truncate">
+                  {session.full_name}
+                </p>
                 <p className="text-xs text-teal-400 capitalize truncate">
                   {session.role.replace("_", " ")}
                 </p>
@@ -192,7 +196,10 @@ function App() {
       {/* MAIN CONTENT */}
       <div className="flex-1 p-10 overflow-y-auto pt-16">
         {currentTab === "my-profile" && (
-          <UserProfile session={session} onSessionUpdate={handleSessionUpdate} />
+          <UserProfile
+            session={session}
+            onSessionUpdate={handleSessionUpdate}
+          />
         )}
 
         {userRole === "superadmin" && currentTab === "super-dashboard" && (
@@ -231,9 +238,15 @@ function App() {
                   onChange={(e) => setAuditStatus(e.target.value)}
                   className="border p-3 w-full rounded font-medium bg-slate-50"
                 >
-                  <option value="Good">🟢 Operational Verification (Good)</option>
-                  <option value="Damaged">🟡 Infrastructure Faulty (Damaged)</option>
-                  <option value="Submerged">🔴 Inundation Critical (Submerged)</option>
+                  <option value="Good">
+                    🟢 Operational Verification (Good)
+                  </option>
+                  <option value="Damaged">
+                    🟡 Infrastructure Faulty (Damaged)
+                  </option>
+                  <option value="Submerged">
+                    🔴 Inundation Critical (Submerged)
+                  </option>
                 </select>
                 <button
                   type="submit"
