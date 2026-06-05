@@ -3,42 +3,55 @@ import { supabaseAdmin } from "../supabaseAdmin";
 import SchoolsTable from "./SchoolsTable";
 import StaffTable from "./StaffTable";
 import AddSchoolModal from "./AddSchoolModal";
-import EditSchoolModal from "./EditSchoolModal"; // <--- Import added here
+import EditSchoolModal from "./EditSchoolModal";
 import AddStaffModal from "./AddStaffModal";
+import EditStaffModal from "./EditStaffModal";
+import AssetAnalytics from "./AssetAnalytics"; 
 
 export default function SuperAdminDashboard() {
   const [schools, setSchools] = useState([]);
   const [globalStaff, setGlobalStaff] = useState([]);
+  const [globalAssets, setGlobalAssets] = useState([]); // New state for analytics
 
   // Modal States
   const [isSchoolModalOpen, setIsSchoolModalOpen] = useState(false);
   const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   
-  // New State for Editing
+  // Edit States
   const [editingSchool, setEditingSchool] = useState(null); 
+  const [editingStaff, setEditingStaff] = useState(null);
 
   useEffect(() => {
     fetchSystemData();
   }, []);
 
   const fetchSystemData = async () => {
+    // 1. Fetch schools
     const { data: schoolsData, error: schoolsError } = await supabaseAdmin
       .from("schools")
       .select("*")
       .order("created_at", { ascending: false });
 
+    // 2. Fetch staff
     const { data: staffData, error: staffError } = await supabaseAdmin
       .from("staff")
       .select(`*, schools (school_name)`);
 
+    // 3. Fetch ALL assets for the analytics dashboard
+    const { data: assetsData, error: assetsError } = await supabaseAdmin
+      .from("assets")
+      .select("*");
+
     if (schoolsError) console.error("Schools fetch error:", schoolsError.message);
     if (staffError) console.error("Staff fetch error:", staffError.message);
+    if (assetsError) console.error("Assets fetch error:", assetsError.message);
 
     if (schoolsData) setSchools(schoolsData);
     if (staffData) setGlobalStaff(staffData);
+    if (assetsData) setGlobalAssets(assetsData); 
   };
 
-  // DELETE LOGIC
+  // DELETE SCHOOL LOGIC
   const handleDeleteSchool = async (schoolId, schoolName) => {
     const confirmDelete = window.confirm(`Are you sure you want to permanently delete ${schoolName}?`);
     if (!confirmDelete) return;
@@ -46,11 +59,26 @@ export default function SuperAdminDashboard() {
     const { error } = await supabaseAdmin.from("schools").delete().eq("school_id", schoolId);
 
     if (error) {
-      // Common error: Trying to delete a school that still has staff assigned to it.
       alert("Failed to delete school. Make sure no staff members are assigned to this school before deleting. \n\nError: " + error.message);
     } else {
-      fetchSystemData(); // Refresh the table automatically
+      fetchSystemData(); 
     }
+  };
+
+  // DELETE STAFF LOGIC
+  const handleDeleteStaff = async (staffId, staffName) => {
+    const confirmDelete = window.confirm(`Are you sure you want to permanently delete user ${staffName}? They will immediately lose access to Arus-SAMS.`);
+    if (!confirmDelete) return;
+
+    const { error: dbError } = await supabaseAdmin.from("staff").delete().eq("id", staffId);
+    
+    if (dbError) {
+      alert("Failed to delete user. They may be linked to critical asset audit logs. \n\nError: " + dbError.message);
+      return;
+    }
+
+    await supabaseAdmin.auth.admin.deleteUser(staffId);
+    fetchSystemData();
   };
 
   return (
@@ -75,31 +103,42 @@ export default function SuperAdminDashboard() {
         </div>
       </div>
 
+      {/* GLOBAL ASSET ANALYTICS */}
+      <AssetAnalytics assets={globalAssets} />
+
       {/* COMPONENT UI SECTIONS */}
       <SchoolsTable 
         schools={schools} 
-        onEdit={setEditingSchool}          // Pass edit trigger
-        onDelete={handleDeleteSchool}      // Pass delete logic
+        onEdit={setEditingSchool}          
+        onDelete={handleDeleteSchool}      
       />
       
-      <StaffTable globalStaff={globalStaff} />
+      <StaffTable 
+        globalStaff={globalStaff} 
+        onEdit={setEditingStaff} 
+        onDelete={handleDeleteStaff} 
+      />
 
       {/* MODALS */}
       {isSchoolModalOpen && (
         <AddSchoolModal onClose={() => setIsSchoolModalOpen(false)} refreshData={fetchSystemData} />
       )}
 
-      {/* RENDERS EDIT MODAL ONLY IF A SCHOOL IS SELECTED */}
       {editingSchool && (
-        <EditSchoolModal 
-          school={editingSchool} 
-          onClose={() => setEditingSchool(null)} 
-          refreshData={fetchSystemData} 
-        />
+        <EditSchoolModal school={editingSchool} onClose={() => setEditingSchool(null)} refreshData={fetchSystemData} />
       )}
 
       {isStaffModalOpen && (
         <AddStaffModal schools={schools} onClose={() => setIsStaffModalOpen(false)} refreshData={fetchSystemData} />
+      )}
+
+      {editingStaff && (
+        <EditStaffModal 
+          staff={editingStaff} 
+          schools={schools} 
+          onClose={() => setEditingStaff(null)} 
+          refreshData={fetchSystemData} 
+        />
       )}
     </div>
   );

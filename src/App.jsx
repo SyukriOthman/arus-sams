@@ -6,6 +6,7 @@ import SuperAdminDashboard from "./components/SuperAdminDashboard";
 import SchoolProfile from "./components/SchoolProfile";
 import UserProfile from "./components/UserProfile";
 import LocationManager from "./pages/LocationManager";
+import AssetMasterList from "./components/AssetMasterList";
 
 function App() {
   const [session, setSession] = useState(null);
@@ -174,6 +175,15 @@ function App() {
               </button>
             )}
 
+            {userRole !== "superadmin" && (
+              <button
+                onClick={() => setCurrentTab("asset-master-list")}
+                className={`block w-full text-left px-4 py-3 rounded transition-colors ${currentTab === "asset-master-list" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
+              >
+                📦 Master Asset List
+              </button>
+            )}
+
             {userRole === "superadmin" && (
               <button
                 onClick={() => setCurrentTab("super-dashboard")}
@@ -212,6 +222,10 @@ function App() {
 
         {currentTab === "school" && (
           <SchoolProfile school_id={userSchoolId} userRole={userRole} />
+        )}
+
+        {currentTab === "asset-master-list" && (
+          <AssetMasterList schoolId={userSchoolId} userRole={userRole} />
         )}
 
         {currentTab === "locations" && (

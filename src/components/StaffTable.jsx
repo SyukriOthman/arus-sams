@@ -1,6 +1,6 @@
 import React from "react";
 
-export default function StaffTable({ globalStaff }) {
+export default function StaffTable({ globalStaff, onEdit, onDelete }) {
   return (
     <div className="bg-white rounded-xl shadow-md border border-slate-200 overflow-hidden">
       <div className="p-5 bg-slate-50 border-b border-slate-200">
@@ -26,6 +26,9 @@ export default function StaffTable({ globalStaff }) {
               </th>
               <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">
                 Password
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase">
+                Actions
               </th>
             </tr>
           </thead>
@@ -62,6 +65,22 @@ export default function StaffTable({ globalStaff }) {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 font-mono">
                   {staff.stored_password || "—"}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
+                  <button
+                    onClick={() => onEdit(staff)}
+                    className="text-xl hover:scale-110 transition-transform"
+                    title="Edit User"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => onDelete(staff.id, staff.full_name)}
+                    className="text-xl hover:scale-110 transition-transform"
+                    title="Delete User"
+                  >
+                    🗑️
+                  </button>
                 </td>
               </tr>
             ))}
