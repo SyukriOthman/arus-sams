@@ -179,7 +179,7 @@ function App() {
                 onClick={() => setCurrentTab("super-dashboard")}
                 className={`block w-full text-left px-4 py-3 rounded transition-colors ${currentTab === "super-dashboard" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
               >
-                👑 Ministry Management
+                👑 Ministry Portal
               </button>
             )}
           </div>
