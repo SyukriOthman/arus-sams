@@ -1,34 +1,61 @@
 import React, { useState } from "react";
-import { supabaseAdmin } from "../supabaseAdmin"; 
+import { supabaseAdmin } from "../supabaseAdmin";
+
+const MALAYSIA_STATES = [
+  { state: "Johor",               ptj: "JPNJ"    },
+  { state: "Kedah",               ptj: "JPNKD"   },
+  { state: "Kelantan",            ptj: "JPNK"    },
+  { state: "Melaka",              ptj: "JPNM"    },
+  { state: "Negeri Sembilan",     ptj: "JPNNS"   },
+  { state: "Pahang",              ptj: "JPNPH"   },
+  { state: "Perak",               ptj: "JPNPK"   },
+  { state: "Perlis",              ptj: "JPNPLS"  },
+  { state: "Pulau Pinang",        ptj: "JPNPP"   },
+  { state: "Sabah",               ptj: "JPNSB"   },
+  { state: "Sarawak",             ptj: "JPNSAR"  },
+  { state: "Selangor",            ptj: "JPNSEL"  },
+  { state: "Terengganu",          ptj: "JPNT"    },
+  { state: "W.P. Kuala Lumpur",   ptj: "JPNWPKL" },
+  { state: "W.P. Labuan",         ptj: "JPNWPL"  },
+  { state: "W.P. Putrajaya",      ptj: "JPNWPP"  },
+];
 
 export default function EditSchoolModal({ school, onClose, refreshData }) {
-  // Pre-fill states with the existing school data
-  const [schoolCode, setSchoolCode] = useState(school.school_code || "");
-  const [schoolName, setSchoolName] = useState(school.school_name || "");
-  const [addressLine, setAddressLine] = useState(school.address_line || "");
-  const [postcode, setPostcode] = useState(school.postcode || "");
-  const [city, setCity] = useState(school.city || "");
-  const [state, setState] = useState(school.state || "");
-  const [latitude, setLatitude] = useState(school.latitude || "");
-  const [longitude, setLongitude] = useState(school.longitude || "");
-  const [contactNo, setContactNo] = useState(school.contact_no || "");
+  const [schoolCode, setSchoolCode]   = useState(school.school_code   || "");
+  const [schoolName, setSchoolName]   = useState(school.school_name   || "");
+  const [addressLine, setAddressLine] = useState(school.address_line  || "");
+  const [postcode, setPostcode]       = useState(school.postcode       || "");
+  const [city, setCity]               = useState(school.city           || "");
+  const [state, setState]             = useState(school.state          || "");
+  const [ptjCode, setPtjCode]         = useState(school.ptj_code       || "");
+  const [latitude, setLatitude]       = useState(school.latitude       || "");
+  const [longitude, setLongitude]     = useState(school.longitude      || "");
+  const [contactNo, setContactNo]     = useState(school.contact_no     || "");
+
+  const handleStateChange = (e) => {
+    const selected = e.target.value;
+    setState(selected);
+    const match = MALAYSIA_STATES.find(s => s.state === selected);
+    setPtjCode(match ? match.ptj : "");
+  };
 
   const handleUpdateSchool = async (e) => {
     e.preventDefault();
     const { error } = await supabaseAdmin
       .from("schools")
       .update({
-        school_code: schoolCode,
-        school_name: schoolName,
+        school_code:  schoolCode,
+        school_name:  schoolName,
         address_line: addressLine,
-        postcode: postcode,
-        city: city,
-        state: state,
-        latitude: parseFloat(latitude) || null,
-        longitude: parseFloat(longitude) || null,
-        contact_no: contactNo,
+        postcode:     postcode,
+        city:         city,
+        state:        state,
+        ptj_code:     ptjCode,
+        latitude:     parseFloat(latitude)  || null,
+        longitude:    parseFloat(longitude) || null,
+        contact_no:   contactNo,
       })
-      .eq("school_id", school.school_id); // Update by ID
+      .eq("school_id", school.school_id);
 
     if (error) {
       alert("Error updating school: " + error.message);
@@ -48,38 +75,59 @@ export default function EditSchoolModal({ school, onClose, refreshData }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700">School Code</label>
-              <input type="text" required value={schoolCode} onChange={(e) => setSchoolCode(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+              <input type="text" required value={schoolCode} onChange={(e) => setSchoolCode(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-sm font-bold text-slate-700">Contact Number</label>
-              <input type="text" value={contactNo} onChange={(e) => setContactNo(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+              <input type="text" value={contactNo} onChange={(e) => setContactNo(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
-          
+
           <div>
             <label className="block text-sm font-bold text-slate-700">School Name</label>
-            <input type="text" required value={schoolName} onChange={(e) => setSchoolName(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+            <input type="text" required value={schoolName} onChange={(e) => setSchoolName(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
           </div>
 
           <div className="pt-2 border-t border-slate-100">
             <label className="block text-sm font-bold text-slate-700">Address Line 1</label>
-            <input type="text" required value={addressLine} onChange={(e) => setAddressLine(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+            <input type="text" required value={addressLine} onChange={(e) => setAddressLine(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
           </div>
 
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-sm font-bold text-slate-700">Postcode</label>
-              <input type="text" required value={postcode} onChange={(e) => setPostcode(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+              <input type="text" required value={postcode} onChange={(e) => setPostcode(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-sm font-bold text-slate-700">City</label>
-              <input type="text" required value={city} onChange={(e) => setCity(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+              <input type="text" required value={city} onChange={(e) => setCity(e.target.value)}
+                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-sm font-bold text-slate-700">State</label>
-              <input type="text" required value={state} onChange={(e) => setState(e.target.value)} className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+              <select required value={state} onChange={handleStateChange}
+                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 bg-white">
+                <option value="" disabled>— Select State —</option>
+                {MALAYSIA_STATES.map(s => (
+                  <option key={s.state} value={s.state}>{s.state}</option>
+                ))}
+              </select>
             </div>
           </div>
+
+          {/* PTJ Code preview */}
+          {ptjCode && (
+            <div className="flex items-center gap-3 px-4 py-3 bg-teal-50 border border-teal-200 rounded-lg">
+              <span className="text-xs font-bold text-teal-600 uppercase tracking-wider">PTJ Code:</span>
+              <span className="font-mono font-bold text-teal-800">{ptjCode}</span>
+              <span className="text-xs text-teal-500">— used in asset registration numbers</span>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200 mt-4">
             <div className="col-span-2">
@@ -87,17 +135,25 @@ export default function EditSchoolModal({ school, onClose, refreshData }) {
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">Latitude</label>
-              <input type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)} className="block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+              <input type="number" step="any" value={latitude} onChange={(e) => setLatitude(e.target.value)}
+                className="block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">Longitude</label>
-              <input type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)} className="block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
+              <input type="number" step="any" value={longitude} onChange={(e) => setLongitude(e.target.value)}
+                className="block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500" />
             </div>
           </div>
 
           <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-slate-100">
-            <button type="button" onClick={onClose} className="px-4 py-2 border border-slate-300 rounded-md text-sm font-bold text-slate-700 hover:bg-slate-50">Cancel</button>
-            <button type="submit" className="px-4 py-2 bg-blue-600 rounded-md text-sm font-bold text-white hover:bg-blue-700 shadow-md">💾 Save Changes</button>
+            <button type="button" onClick={onClose}
+              className="px-4 py-2 border border-slate-300 rounded-md text-sm font-bold text-slate-700 hover:bg-slate-50">
+              Cancel
+            </button>
+            <button type="submit"
+              className="px-4 py-2 bg-blue-600 rounded-md text-sm font-bold text-white hover:bg-blue-700 shadow-md">
+              💾 Save Changes
+            </button>
           </div>
         </form>
       </div>
