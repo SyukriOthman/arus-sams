@@ -793,7 +793,7 @@ export default function AssetRegistration({ user, schoolId, userRole }) {
 
       {/* Sticky save bar */}
       {canRegister && (
-        <div className="fixed bottom-0 left-72 right-0 bg-white border-t border-slate-200 px-10 py-4 z-40 shadow-lg">
+        <div className="fixed bottom-0 left-0 md:left-72 right-0 bg-white border-t border-slate-200 px-4 md:px-10 py-4 z-40 shadow-lg">
           <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
             <div className="text-sm">
               {submitError
