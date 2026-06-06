@@ -20,32 +20,32 @@ export default function AssetAnalytics({ assets, title = "📊 Asset Intelligenc
         <h3 className="text-xl font-bold text-slate-800">{title}</h3>
       </div>
 
-      <div className="grid grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
         {/* Total Assets */}
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-6 flex flex-col justify-center items-center">
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Total Assets</p>
-          <p className="text-4xl font-black text-slate-800">{totalAssets}</p>
+        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-4 md:p-6 flex flex-col justify-center items-center">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 text-center">Total Assets</p>
+          <p className="text-3xl md:text-4xl font-black text-slate-800">{totalAssets}</p>
         </div>
 
         {/* Operational */}
-        <div className="bg-white rounded-xl shadow-md border-b-4 border-b-green-500 p-6 flex flex-col justify-center items-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-3 opacity-20 text-4xl">🟢</div>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Operational</p>
-          <p className="text-4xl font-black text-green-600">{activeAssets}</p>
+        <div className="bg-white rounded-xl shadow-md border-b-4 border-b-green-500 p-4 md:p-6 flex flex-col justify-center items-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-2 opacity-20 text-3xl">🟢</div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 text-center">Operational</p>
+          <p className="text-3xl md:text-4xl font-black text-green-600">{activeAssets}</p>
         </div>
 
         {/* Under Maintenance */}
-        <div className="bg-white rounded-xl shadow-md border-b-4 border-b-yellow-500 p-6 flex flex-col justify-center items-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-3 opacity-20 text-4xl">🔧</div>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Under Maintenance</p>
-          <p className="text-4xl font-black text-yellow-600">{maintenanceAssets}</p>
+        <div className="bg-white rounded-xl shadow-md border-b-4 border-b-yellow-500 p-4 md:p-6 flex flex-col justify-center items-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-2 opacity-20 text-3xl">🔧</div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 text-center">Maintenance</p>
+          <p className="text-3xl md:text-4xl font-black text-yellow-600">{maintenanceAssets}</p>
         </div>
 
         {/* Lost / Disposed */}
-        <div className="bg-white rounded-xl shadow-md border-b-4 border-b-red-500 p-6 flex flex-col justify-center items-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-3 opacity-20 text-4xl">🚨</div>
-          <p className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-1">Lost / Disposed</p>
-          <p className="text-4xl font-black text-red-600">{lostDisposedAssets}</p>
+        <div className="bg-white rounded-xl shadow-md border-b-4 border-b-red-500 p-4 md:p-6 flex flex-col justify-center items-center relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-2 opacity-20 text-3xl">🚨</div>
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 text-center">Lost / Disposed</p>
+          <p className="text-3xl md:text-4xl font-black text-red-600">{lostDisposedAssets}</p>
         </div>
       </div>
     </div>

@@ -86,9 +86,9 @@ export default function AssetMasterList({ schoolId, userRole }) {
 
   return (
     <div className="fade-in space-y-6 relative">
-      <div className="flex justify-between items-center bg-white p-6 rounded-xl shadow-md border border-slate-200">
+      <div className="flex items-start justify-between gap-3 bg-white p-4 md:p-6 rounded-xl shadow-md border border-slate-200">
         <div>
-          <h2 className="text-2xl font-bold text-slate-800">📦 Asset Master List</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800">📦 Asset Master List</h2>
           <p className="text-slate-500 text-sm mt-1">
             {canEdit
               ? "Manage and track all physical assets registered to this school."
@@ -98,7 +98,7 @@ export default function AssetMasterList({ schoolId, userRole }) {
         {canEdit && (
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="bg-teal-600 hover:bg-teal-700 text-white px-5 py-2.5 rounded-lg font-bold shadow transition-colors"
+            className="flex-shrink-0 bg-teal-600 hover:bg-teal-700 text-white px-3 md:px-5 py-2 md:py-2.5 rounded-lg font-bold shadow transition-colors text-sm"
           >
             + Register New Asset
           </button>
