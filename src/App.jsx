@@ -70,7 +70,7 @@ function App() {
           {currentTab === "asset-master-list" && <AssetMasterList schoolId={userSchoolId} userRole={userRole} />}
           {currentTab === "locations" && <LocationManager user={session} schoolId={userSchoolId} />}
           {currentTab === "asset-registration" && <AssetRegistration user={session} schoolId={userSchoolId} userRole={userRole} />}
-          {currentTab === "mobile-audit" && <MobileAudit />}
+          {currentTab === "mobile-audit" && <MobileAudit user={session} />}
           {currentTab === "hydrological-simulator" && <HydrologicalSimulator />}
         </div>
       </div>
