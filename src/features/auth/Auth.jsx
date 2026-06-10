@@ -53,7 +53,7 @@ export default function Auth({ onDemoLogin }) {
       <div className="w-full md:w-1/2 bg-slate-900 p-12 flex flex-col justify-center text-white">
         <div className="max-w-md mx-auto space-y-8">
           <div>
-            <h1 className="text-4xl font-black text-teal-400 mb-2">Arus-SAMS</h1>
+            <h1 className="text-4xl font-black text-white mb-2">Arus-SAMS</h1>
             <p className="text-slate-400 font-medium">School Asset Management & Flood Mitigation System</p>
           </div>
 
