@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 
 export default function AddAssetModal({ schoolId, onClose, refreshData }) {
   const [locations, setLocations] = useState([]);
@@ -49,7 +49,9 @@ export default function AddAssetModal({ schoolId, onClose, refreshData }) {
         .maybeSingle();
 
       if (data) {
-        setQrError("This QR Tag ID is already registered to another asset. Please use a unique ID.");
+        setQrError(
+          "This QR Tag ID is already registered to another asset. Please use a unique ID.",
+        );
         setQrValid(false);
       } else {
         setQrError(null);
@@ -89,8 +91,8 @@ export default function AddAssetModal({ schoolId, onClose, refreshData }) {
   const qrBorderClass = qrError
     ? "border-red-500 focus:ring-red-400"
     : qrValid
-    ? "border-green-500 focus:ring-green-400"
-    : "border-slate-300 focus:ring-teal-500";
+      ? "border-green-500 focus:ring-green-400"
+      : "border-slate-300 focus:ring-teal-500";
 
   return (
     <div className="fixed inset-0 bg-slate-900 bg-opacity-60 flex items-center justify-center z-50 p-4">
@@ -99,7 +101,6 @@ export default function AddAssetModal({ schoolId, onClose, refreshData }) {
           ➕ Register New Asset
         </h3>
         <form onSubmit={handleSubmit} className="space-y-4">
-
           {/* QR Tag ID with real-time check */}
           <div>
             <label className="block text-sm font-bold text-slate-700">
@@ -117,7 +118,9 @@ export default function AddAssetModal({ schoolId, onClose, refreshData }) {
               {/* Status icon on the right */}
               <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
                 {qrChecking && (
-                  <span className="text-slate-400 text-xs animate-pulse">checking...</span>
+                  <span className="text-slate-400 text-xs animate-pulse">
+                    checking...
+                  </span>
                 )}
                 {!qrChecking && qrValid && (
                   <span className="text-green-500 font-bold text-lg">✓</span>
@@ -141,7 +144,9 @@ export default function AddAssetModal({ schoolId, onClose, refreshData }) {
 
           {/* Asset Name */}
           <div>
-            <label className="block text-sm font-bold text-slate-700">Asset Name</label>
+            <label className="block text-sm font-bold text-slate-700">
+              Asset Name
+            </label>
             <input
               type="text"
               required
@@ -154,7 +159,9 @@ export default function AddAssetModal({ schoolId, onClose, refreshData }) {
 
           {/* Category */}
           <div>
-            <label className="block text-sm font-bold text-slate-700">Category</label>
+            <label className="block text-sm font-bold text-slate-700">
+              Category
+            </label>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -170,14 +177,18 @@ export default function AddAssetModal({ schoolId, onClose, refreshData }) {
 
           {/* Location */}
           <div>
-            <label className="block text-sm font-bold text-slate-700">Location / Room</label>
+            <label className="block text-sm font-bold text-slate-700">
+              Location / Room
+            </label>
             <select
               value={locationId}
               onChange={(e) => setLocationId(e.target.value)}
               className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
               required
             >
-              <option value="" disabled>-- Select a Location --</option>
+              <option value="" disabled>
+                -- Select a Location --
+              </option>
               {locations.map((loc) => (
                 <option key={loc.location_id} value={loc.location_id}>
                   {loc.location_name}
@@ -188,7 +199,9 @@ export default function AddAssetModal({ schoolId, onClose, refreshData }) {
 
           {/* Status */}
           <div>
-            <label className="block text-sm font-bold text-slate-700">Status</label>
+            <label className="block text-sm font-bold text-slate-700">
+              Status
+            </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value)}

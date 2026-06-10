@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 import AdminStaffTable from "./AdminStaffTable";
 import AdminAddStaffForm from "./AdminAddStaffForm";
 import AdminEditStaffForm from "./AdminEditStaffForm";

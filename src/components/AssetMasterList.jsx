@@ -2,22 +2,33 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import QRCode from "qrcode";
 import { QrCode, Download, Printer } from "lucide-react";
 import { supabase } from "../supabaseClient";
-import AddAssetModal from "./AddAssetModal";
-import EditAssetModal from "./EditAssetModal";
-import AssetAnalytics from "./AssetAnalytics";
-import { generateQrId, generateAndSaveQR, incrementQrCounter } from "../hooks/useAssets";
+import AddAssetModal from "../features/assets/AddAssetModal";
+import EditAssetModal from "../features/assets/EditAssetModal";
+import AssetAnalytics from "../features/assets/AssetAnalytics";
+import {
+  generateQrId,
+  generateAndSaveQR,
+  incrementQrCounter,
+} from "../hooks/useAssets";
 
 // ── Sort button ───────────────────────────────────────────────────────────────
 
 function SortButton({ label, field, sortField, sortDir, onSort }) {
   const active = sortField === field;
   return (
-    <button onClick={() => onSort(field)} className="flex items-center gap-1 group">
-      <span className={`text-xs font-bold uppercase ${active ? 'text-teal-600' : 'text-slate-500'}`}>
+    <button
+      onClick={() => onSort(field)}
+      className="flex items-center gap-1 group"
+    >
+      <span
+        className={`text-xs font-bold uppercase ${active ? "text-teal-600" : "text-slate-500"}`}
+      >
         {label}
       </span>
-      <span className={`text-xs ${active ? 'text-teal-600' : 'text-slate-300 group-hover:text-slate-400'}`}>
-        {active ? (sortDir === 'asc' ? '▲' : '▼') : '⇅'}
+      <span
+        className={`text-xs ${active ? "text-teal-600" : "text-slate-300 group-hover:text-slate-400"}`}
+      >
+        {active ? (sortDir === "asc" ? "▲" : "▼") : "⇅"}
       </span>
     </button>
   );
@@ -33,20 +44,22 @@ function QrModal({ asset, locationPath, schoolName, onClose }) {
     QRCode.toDataURL(asset.qr_code_id, {
       width: 400,
       margin: 2,
-      color: { dark: '#000000', light: '#ffffff' },
-    }).then(url => setQrDataUrl(url));
+      color: { dark: "#000000", light: "#ffffff" },
+    }).then((url) => setQrDataUrl(url));
   }, [asset?.qr_code_id]);
 
   // Close on Escape
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    const handler = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
 
   const handleDownload = () => {
     if (!qrDataUrl) return;
-    const link = document.createElement('a');
+    const link = document.createElement("a");
     link.href = qrDataUrl;
     link.download = `${asset.qr_code_id}.png`;
     document.body.appendChild(link);
@@ -56,7 +69,7 @@ function QrModal({ asset, locationPath, schoolName, onClose }) {
 
   const handlePrint = () => {
     if (!qrDataUrl) return;
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -94,7 +107,7 @@ function QrModal({ asset, locationPath, schoolName, onClose }) {
           <div class="app-name">ARUS-SAMS</div>
           <img class="qr-img" src="${qrDataUrl}" alt="QR Code" />
           <div class="qr-id">${asset.qr_code_id}</div>
-          <div class="reg-no">${asset.registration_no || 'No Registration No.'}</div>
+          <div class="reg-no">${asset.registration_no || "No Registration No."}</div>
           <div class="asset-name">${asset.asset_name}</div>
           <div class="location">${locationPath}</div>
           <div class="school">${schoolName}</div>
@@ -118,7 +131,7 @@ function QrModal({ asset, locationPath, schoolName, onClose }) {
     >
       <div
         className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden"
-        onClick={e => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
@@ -153,15 +166,25 @@ function QrModal({ asset, locationPath, schoolName, onClose }) {
             {asset.qr_code_id}
           </p>
           {asset.registration_no && (
-            <p className="text-xs text-slate-400 break-all mb-3">{asset.registration_no}</p>
+            <p className="text-xs text-slate-400 break-all mb-3">
+              {asset.registration_no}
+            </p>
           )}
 
           {/* Asset details */}
           <div className="text-left bg-slate-50 rounded-xl p-3 mb-4 space-y-1">
-            <p className="text-sm font-bold text-slate-800">{asset.asset_name}</p>
-            {asset.category && <p className="text-xs text-slate-500">{asset.category}</p>}
-            {locationPath && <p className="text-xs text-slate-400">{locationPath}</p>}
-            {schoolName && <p className="text-xs text-slate-400">{schoolName}</p>}
+            <p className="text-sm font-bold text-slate-800">
+              {asset.asset_name}
+            </p>
+            {asset.category && (
+              <p className="text-xs text-slate-500">{asset.category}</p>
+            )}
+            {locationPath && (
+              <p className="text-xs text-slate-400">{locationPath}</p>
+            )}
+            {schoolName && (
+              <p className="text-xs text-slate-400">{schoolName}</p>
+            )}
           </div>
 
           {/* Action buttons */}
@@ -202,7 +225,7 @@ export default function AssetMasterList({ schoolId, userRole }) {
   const [assets, setAssets] = useState([]);
   const [locationPaths, setLocationPaths] = useState({});
   const [lastUsageMap, setLastUsageMap] = useState({});
-  const [schoolName, setSchoolName] = useState('');
+  const [schoolName, setSchoolName] = useState("");
   const [loading, setLoading] = useState(true);
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -212,26 +235,26 @@ export default function AssetMasterList({ schoolId, userRole }) {
   const [generatingQrFor, setGeneratingQrFor] = useState(null);
 
   const [sortField, setSortField] = useState(null);
-  const [sortDir, setSortDir] = useState('asc');
+  const [sortDir, setSortDir] = useState("asc");
 
   const canEdit = userRole === "headmaster" || userRole === "asset_teacher";
 
   const handleSort = (field) => {
     if (sortField === field) {
-      setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
       setSortField(field);
-      setSortDir('asc');
+      setSortDir("asc");
     }
   };
 
   const sortedAssets = useMemo(() => {
     if (!sortField) return assets;
     return [...assets].sort((a, b) => {
-      const va = (a[sortField] || '').toString().toLowerCase();
-      const vb = (b[sortField] || '').toString().toLowerCase();
-      if (va < vb) return sortDir === 'asc' ? -1 : 1;
-      if (va > vb) return sortDir === 'asc' ? 1 : -1;
+      const va = (a[sortField] || "").toString().toLowerCase();
+      const vb = (b[sortField] || "").toString().toLowerCase();
+      if (va < vb) return sortDir === "asc" ? -1 : 1;
+      if (va > vb) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
   }, [assets, sortField, sortDir]);
@@ -253,34 +276,39 @@ export default function AssetMasterList({ schoolId, userRole }) {
   };
 
   const handleBulkPrint = async () => {
-    const printable = assets.filter(a => a.qr_code_id);
+    const printable = assets.filter((a) => a.qr_code_id);
     if (printable.length === 0) {
-      alert('No assets with QR codes found.');
+      alert("No assets with QR codes found.");
       return;
     }
 
     const qrUrls = await Promise.all(
       printable.map(async (a) => {
         const url = await QRCode.toDataURL(a.qr_code_id, {
-          width: 300, margin: 1,
-          color: { dark: '#000000', light: '#ffffff' },
+          width: 300,
+          margin: 1,
+          color: { dark: "#000000", light: "#ffffff" },
         });
         return { asset: a, url };
-      })
+      }),
     );
 
-    const labelsHtml = qrUrls.map(({ asset: a, url }) => `
+    const labelsHtml = qrUrls
+      .map(
+        ({ asset: a, url }) => `
       <div class="label">
         <div class="app-name">ARUS-SAMS</div>
         <img class="qr-img" src="${url}" />
         <div class="qr-id">${a.qr_code_id}</div>
-        <div class="reg-no">${a.registration_no || ''}</div>
+        <div class="reg-no">${a.registration_no || ""}</div>
         <div class="asset-name">${a.asset_name}</div>
         <div class="school">${schoolName}</div>
       </div>
-    `).join('');
+    `,
+      )
+      .join("");
 
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -332,11 +360,11 @@ export default function AssetMasterList({ schoolId, userRole }) {
 
   const fetchSchoolName = async () => {
     const { data } = await supabase
-      .from('schools')
-      .select('school_name')
-      .eq('school_id', schoolId)
+      .from("schools")
+      .select("school_name")
+      .eq("school_id", schoolId)
       .single();
-    if (data) setSchoolName(data.school_name || '');
+    if (data) setSchoolName(data.school_name || "");
   };
 
   const fetchAssets = async () => {
@@ -348,7 +376,7 @@ export default function AssetMasterList({ schoolId, userRole }) {
 
     if (!error && data) {
       setAssets(data);
-      fetchLastUsageStatus(data.map(a => a.asset_id));
+      fetchLastUsageStatus(data.map((a) => a.asset_id));
     }
   };
 
@@ -362,7 +390,7 @@ export default function AssetMasterList({ schoolId, userRole }) {
 
     if (!data) return;
     const map = {};
-    data.forEach(row => {
+    data.forEach((row) => {
       if (!map[row.asset_id]) map[row.asset_id] = row.usage_status;
     });
     setLastUsageMap(map);
@@ -376,14 +404,18 @@ export default function AssetMasterList({ schoolId, userRole }) {
 
     if (!data) return;
     const map = {};
-    data.forEach(loc => { map[loc.location_id] = loc; });
+    data.forEach((loc) => {
+      map[loc.location_id] = loc;
+    });
     const paths = {};
-    data.forEach(loc => {
+    data.forEach((loc) => {
       const parts = [];
       let current = loc;
       while (current) {
         parts.unshift(current.location_name);
-        current = current.parent_location_id ? map[current.parent_location_id] : null;
+        current = current.parent_location_id
+          ? map[current.parent_location_id]
+          : null;
       }
       paths[loc.location_id] = parts.join(" › ");
     });
@@ -391,8 +423,16 @@ export default function AssetMasterList({ schoolId, userRole }) {
   };
 
   const handleDeleteAsset = async (assetId, assetName) => {
-    if (!window.confirm(`Are you sure you want to permanently delete: ${assetName}?`)) return;
-    const { error } = await supabase.from("assets").delete().eq("asset_id", assetId);
+    if (
+      !window.confirm(
+        `Are you sure you want to permanently delete: ${assetName}?`,
+      )
+    )
+      return;
+    const { error } = await supabase
+      .from("assets")
+      .delete()
+      .eq("asset_id", assetId);
     if (error) {
       alert("Failed to delete asset: " + error.message);
     } else {
@@ -403,15 +443,16 @@ export default function AssetMasterList({ schoolId, userRole }) {
   const closeQrModal = useCallback(() => setQrModalAsset(null), []);
 
   if (loading) {
-    return <div className="text-slate-500 font-bold p-8">Loading master list...</div>;
+    return (
+      <div className="text-slate-500 font-bold p-8">Loading master list...</div>
+    );
   }
 
   const colSpan = canEdit ? 7 : 6;
-  const hasQrAssets = assets.some(a => a.qr_code_id);
+  const hasQrAssets = assets.some((a) => a.qr_code_id);
 
   return (
     <div className="fade-in space-y-6 relative">
-
       {/* Toast */}
       {qrToast && (
         <div className="fixed top-4 right-4 z-50 px-5 py-3 bg-teal-600 text-white text-sm font-bold rounded-xl shadow-lg animate-pulse">
@@ -422,7 +463,9 @@ export default function AssetMasterList({ schoolId, userRole }) {
       {/* Header bar */}
       <div className="flex items-start justify-between gap-3 bg-white p-4 md:p-6 rounded-xl shadow-md border border-slate-200">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-slate-800">📦 Asset Master List</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800">
+            📦 Asset Master List
+          </h2>
           <p className="text-slate-500 text-sm mt-1">
             {canEdit
               ? "Manage and track all physical assets registered to this school."
@@ -460,24 +503,49 @@ export default function AssetMasterList({ schoolId, userRole }) {
             <thead className="bg-slate-100">
               <tr>
                 <th className="px-6 py-3 text-left">
-                  <SortButton label="Tag ID (QR)" field="qr_code_id" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortButton
+                    label="Tag ID (QR)"
+                    field="qr_code_id"
+                    sortField={sortField}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
                 </th>
                 <th className="px-6 py-3 text-left">
-                  <SortButton label="Asset Name" field="asset_name" sortField={sortField} sortDir={sortDir} onSort={handleSort} />
+                  <SortButton
+                    label="Asset Name"
+                    field="asset_name"
+                    sortField={sortField}
+                    sortDir={sortDir}
+                    onSort={handleSort}
+                  />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Category</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Location</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Status</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">Usage</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">
+                  Category
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">
+                  Location
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase">
+                  Usage
+                </th>
                 {canEdit && (
-                  <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase">Actions</th>
+                  <th className="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase">
+                    Actions
+                  </th>
                 )}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
               {sortedAssets.length === 0 ? (
                 <tr>
-                  <td colSpan={colSpan} className="px-6 py-8 text-center text-slate-500">
+                  <td
+                    colSpan={colSpan}
+                    className="px-6 py-8 text-center text-slate-500"
+                  >
                     No assets found for this school.
                   </td>
                 </tr>
@@ -486,7 +554,6 @@ export default function AssetMasterList({ schoolId, userRole }) {
                   const usage = lastUsageMap[asset.asset_id];
                   return (
                     <tr key={asset.asset_id} className="hover:bg-slate-50">
-
                       {/* QR ID — clickable to open modal */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {asset.qr_code_id ? (
@@ -497,7 +564,9 @@ export default function AssetMasterList({ schoolId, userRole }) {
                             {asset.qr_code_id}
                           </button>
                         ) : (
-                          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">No QR</span>
+                          <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-semibold">
+                            No QR
+                          </span>
                         )}
                       </td>
 
@@ -520,13 +589,19 @@ export default function AssetMasterList({ schoolId, userRole }) {
 
                       {/* Lifecycle Status */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          asset.status === 'Active'            ? 'bg-green-100 text-green-800' :
-                          asset.status === 'Under Maintenance' ? 'bg-yellow-100 text-yellow-800' :
-                          asset.status === 'Lost'              ? 'bg-orange-100 text-orange-800' :
-                          asset.status === 'Disposed'          ? 'bg-red-100 text-red-800'
-                                                               : 'bg-slate-100 text-slate-800'
-                        }`}>
+                        <span
+                          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            asset.status === "Active"
+                              ? "bg-green-100 text-green-800"
+                              : asset.status === "Under Maintenance"
+                                ? "bg-yellow-100 text-yellow-800"
+                                : asset.status === "Lost"
+                                  ? "bg-orange-100 text-orange-800"
+                                  : asset.status === "Disposed"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-slate-100 text-slate-800"
+                          }`}
+                        >
                           {asset.status || "Unknown"}
                         </span>
                       </td>
@@ -534,13 +609,19 @@ export default function AssetMasterList({ schoolId, userRole }) {
                       {/* Usage Status (from last audit) */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {usage ? (
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            usage === 'In Use' ? 'bg-blue-100 text-blue-800' : 'bg-slate-100 text-slate-600'
-                          }`}>
+                          <span
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              usage === "In Use"
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-slate-100 text-slate-600"
+                            }`}
+                          >
                             {usage}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-300 italic">Not audited</span>
+                          <span className="text-xs text-slate-300 italic">
+                            Not audited
+                          </span>
                         )}
                       </td>
 
@@ -562,19 +643,30 @@ export default function AssetMasterList({ schoolId, userRole }) {
                                 disabled={generatingQrFor === asset.asset_id}
                                 className="text-xs px-2 py-1 rounded bg-teal-50 border border-teal-200 text-teal-700 hover:bg-teal-100 disabled:opacity-50"
                               >
-                                {generatingQrFor === asset.asset_id ? '...' : 'Generate QR'}
+                                {generatingQrFor === asset.asset_id
+                                  ? "..."
+                                  : "Generate QR"}
                               </button>
                             )}
                             <button
                               onClick={() => setEditingAsset(asset)}
                               className="text-xl hover:scale-110 transition-transform"
                               title="Edit"
-                            >✏️</button>
+                            >
+                              ✏️
+                            </button>
                             <button
-                              onClick={() => handleDeleteAsset(asset.asset_id, asset.asset_name)}
+                              onClick={() =>
+                                handleDeleteAsset(
+                                  asset.asset_id,
+                                  asset.asset_name,
+                                )
+                              }
                               className="text-xl hover:scale-110 transition-transform"
                               title="Delete"
-                            >🗑️</button>
+                            >
+                              🗑️
+                            </button>
                           </div>
                         </td>
                       )}
@@ -608,7 +700,7 @@ export default function AssetMasterList({ schoolId, userRole }) {
       {qrModalAsset && (
         <QrModal
           asset={qrModalAsset}
-          locationPath={locationPaths[qrModalAsset.location_id] || 'Unassigned'}
+          locationPath={locationPaths[qrModalAsset.location_id] || "Unassigned"}
           schoolName={schoolName}
           onClose={closeQrModal}
         />

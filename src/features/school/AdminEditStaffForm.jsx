@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { supabase } from "../supabaseClient";
+import { supabase } from "../../supabaseClient";
 
 export default function AdminEditStaffForm({ staff, onSuccess, onCancel }) {
   // Initialize local state with the passed-in staff prop
