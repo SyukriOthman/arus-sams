@@ -7,7 +7,7 @@ import AddSchoolModal from "./AddSchoolModal";
 import EditSchoolModal from "./EditSchoolModal";
 import AddStaffModal from "./AddStaffModal";
 import EditStaffModal from "./EditStaffModal";
-import MinistryOverview from "./MinistryOverview"; // ✅ Our new dashboard!
+import MinistryOverview from "./MinistryOverview";
 import AssetAnalytics from "../assets/AssetAnalytics"; 
 
 export default function SuperAdminDashboard() {

@@ -1,51 +1,79 @@
 import React from "react";
+import { 
+  ChartBarIcon, 
+  CheckCircleIcon, 
+  WrenchScrewdriverIcon, 
+  ExclamationCircleIcon 
+} from "@heroicons/react/24/outline";
 
-export default function AssetAnalytics({ assets, title = "📊 Asset Intelligence" }) {
+export default function AssetAnalytics({ assets, title = "Asset Intelligence" }) {
   if (!assets || assets.length === 0) {
     return (
-      <div className="bg-white rounded-xl shadow-md border border-slate-200 p-8 text-center">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-8 text-center">
         <p className="text-slate-500 font-medium">No asset data available yet.</p>
       </div>
     );
   }
 
-  const totalAssets = assets.length;
-  const activeAssets = assets.filter((a) => a.status === "Active").length;
-  const maintenanceAssets = assets.filter((a) => a.status === "Under Maintenance").length;
-  const lostDisposedAssets = assets.filter((a) => a.status === "Lost" || a.status === "Disposed").length;
+  // 1. Calculate Metrics
+  const total = assets.length;
+  const active = assets.filter((a) => a.status === "Active").length;
+  const maintenance = assets.filter((a) => a.status === "Under Maintenance").length;
+  const missing = assets.filter((a) => a.status === "Lost" || a.status === "Disposed").length;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold text-slate-800">{title}</h3>
+    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden fade-in">
+      {/* HEADER */}
+      <div className="p-6 border-b border-slate-200 flex items-center gap-3 bg-slate-50">
+        <div className="p-2 bg-blue-100 rounded-lg">
+          <ChartBarIcon className="w-6 h-6 text-blue-600" />
+        </div>
+        <div>
+          <h3 className="text-lg font-bold text-slate-800">{title}</h3>
+          <p className="text-sm text-slate-500">Real-time status overview of regional equipment</p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-6">
-        {/* Total Assets */}
-        <div className="bg-white rounded-xl shadow-md border border-slate-200 p-4 md:p-6 flex flex-col justify-center items-center">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 text-center">Total Assets</p>
-          <p className="text-3xl md:text-4xl font-black text-slate-800">{totalAssets}</p>
+      {/* METRIC GRID */}
+      <div className="p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Total Card */}
+        <div className="bg-slate-50 p-4 rounded-lg border border-slate-200">
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Total Assets</p>
+          <p className="text-3xl font-black text-slate-800 mt-1">{total}</p>
         </div>
 
         {/* Operational */}
-        <div className="bg-white rounded-xl shadow-md border-b-4 border-b-green-500 p-4 md:p-6 flex flex-col justify-center items-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-2 opacity-20 text-3xl">🟢</div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 text-center">Operational</p>
-          <p className="text-3xl md:text-4xl font-black text-green-600">{activeAssets}</p>
+        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+          <p className="text-xs font-bold text-green-700 uppercase tracking-wider flex items-center gap-1">
+            <CheckCircleIcon className="w-4 h-4" /> Operational
+          </p>
+          <p className="text-3xl font-black text-green-800 mt-1">{active}</p>
         </div>
 
-        {/* Under Maintenance */}
-        <div className="bg-white rounded-xl shadow-md border-b-4 border-b-yellow-500 p-4 md:p-6 flex flex-col justify-center items-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-2 opacity-20 text-3xl">🔧</div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 text-center">Maintenance</p>
-          <p className="text-3xl md:text-4xl font-black text-yellow-600">{maintenanceAssets}</p>
+        {/* Maintenance */}
+        <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+          <p className="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1">
+            <WrenchScrewdriverIcon className="w-4 h-4" /> In Repair
+          </p>
+          <p className="text-3xl font-black text-amber-800 mt-1">{maintenance}</p>
         </div>
 
-        {/* Lost / Disposed */}
-        <div className="bg-white rounded-xl shadow-md border-b-4 border-b-red-500 p-4 md:p-6 flex flex-col justify-center items-center relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-2 opacity-20 text-3xl">🚨</div>
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1 text-center">Lost / Disposed</p>
-          <p className="text-3xl md:text-4xl font-black text-red-600">{lostDisposedAssets}</p>
+        {/* Missing/Disposed */}
+        <div className="bg-red-50 p-4 rounded-lg border border-red-200">
+          <p className="text-xs font-bold text-red-700 uppercase tracking-wider flex items-center gap-1">
+            <ExclamationCircleIcon className="w-4 h-4" /> Out of Service
+          </p>
+          <p className="text-3xl font-black text-red-800 mt-1">{missing}</p>
+        </div>
+      </div>
+
+      {/* VISUAL HEALTH BAR */}
+      <div className="px-6 pb-6">
+        <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Inventory Health Distribution</p>
+        <div className="w-full h-3 bg-slate-100 rounded-full flex overflow-hidden border border-slate-200">
+          <div style={{ width: `${(active/total)*100}%` }} className="bg-green-500" title="Operational"></div>
+          <div style={{ width: `${(maintenance/total)*100}%` }} className="bg-amber-500" title="In Repair"></div>
+          <div style={{ width: `${(missing/total)*100}%` }} className="bg-red-500" title="Out of Service"></div>
         </div>
       </div>
     </div>
