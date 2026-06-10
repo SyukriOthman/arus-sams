@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { supabaseAdmin } from "../supabaseAdmin";
+import { supabase } from "../supabaseClient";
 
 const MALAYSIA_STATES = [
   { state: "Johor",               ptj: "JPNJ"    },
@@ -43,7 +43,7 @@ export default function AddSchoolModal({ onClose, refreshData }) {
     e.preventDefault();
     
     // 1. Insert the school and immediately .select() to get the generated UUID
-    const { data: newSchoolData, error } = await supabaseAdmin
+    const { data: newSchoolData, error } = await supabase
       .from("schools")
       .insert([
         {
@@ -67,7 +67,7 @@ export default function AddSchoolModal({ onClose, refreshData }) {
       // 2. Automatically map the 3 nearest iHYDRO stations to this new school
       if (newSchoolData && newSchoolData.length > 0) {
         const newSchoolId = newSchoolData[0].school_id; 
-        await supabaseAdmin.rpc("assign_nearest_stations", { p_school_id: newSchoolId });
+        await supabase.rpc("assign_nearest_stations", { p_school_id: newSchoolId });
       }
 
       refreshData();

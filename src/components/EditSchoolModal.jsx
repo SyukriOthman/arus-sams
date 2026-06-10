@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { supabaseAdmin } from "../supabaseAdmin";
+import { supabase } from "../supabaseClient";
 
 const MALAYSIA_STATES = [
   { state: "Johor",               ptj: "JPNJ"    },
@@ -41,7 +41,7 @@ export default function EditSchoolModal({ school, onClose, refreshData }) {
 
   const handleUpdateSchool = async (e) => {
     e.preventDefault();
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from("schools")
       .update({
         school_code:  schoolCode,
@@ -62,7 +62,7 @@ export default function EditSchoolModal({ school, onClose, refreshData }) {
     } else {
         
       // Trigger the automatic station mapping calculation since coordinates might have changed
-      await supabaseAdmin.rpc("assign_nearest_stations", { p_school_id: school.school_id });
+      await supabase.rpc("assign_nearest_stations", { p_school_id: school.school_id });
 
       refreshData();
       onClose();

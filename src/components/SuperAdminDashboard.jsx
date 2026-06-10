@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabaseAdmin } from "../supabaseAdmin";
+import { supabase } from "../supabaseClient"; // Secure client import
 import SchoolsTable from "./SchoolsTable";
 import StaffTable from "./StaffTable";
 import AddSchoolModal from "./AddSchoolModal";
@@ -27,18 +27,18 @@ export default function SuperAdminDashboard() {
 
   const fetchSystemData = async () => {
     // 1. Fetch schools
-    const { data: schoolsData, error: schoolsError } = await supabaseAdmin
+    const { data: schoolsData, error: schoolsError } = await supabase
       .from("schools")
       .select("*")
       .order("created_at", { ascending: false });
 
     // 2. Fetch staff
-    const { data: staffData, error: staffError } = await supabaseAdmin
+    const { data: staffData, error: staffError } = await supabase
       .from("staff")
       .select(`*, schools (school_name)`);
 
     // 3. Fetch ALL assets for the analytics dashboard
-    const { data: assetsData, error: assetsError } = await supabaseAdmin
+    const { data: assetsData, error: assetsError } = await supabase
       .from("assets")
       .select("*");
 
@@ -56,7 +56,7 @@ export default function SuperAdminDashboard() {
     const confirmDelete = window.confirm(`Are you sure you want to permanently delete ${schoolName}?`);
     if (!confirmDelete) return;
 
-    const { error } = await supabaseAdmin.from("schools").delete().eq("school_id", schoolId);
+    const { error } = await supabase.from("schools").delete().eq("school_id", schoolId);
 
     if (error) {
       alert("Failed to delete school. Make sure no staff members are assigned to this school before deleting. \n\nError: " + error.message);
@@ -70,14 +70,19 @@ export default function SuperAdminDashboard() {
     const confirmDelete = window.confirm(`Are you sure you want to permanently delete user ${staffName}? They will immediately lose access to Arus-SAMS.`);
     if (!confirmDelete) return;
 
-    const { error: dbError } = await supabaseAdmin.from("staff").delete().eq("id", staffId);
+    // 1. Delete the public profile (Immediately revokes system access)
+    const { error: dbError } = await supabase.from("staff").delete().eq("id", staffId);
     
     if (dbError) {
       alert("Failed to delete user. They may be linked to critical asset audit logs. \n\nError: " + dbError.message);
       return;
     }
 
-    await supabaseAdmin.auth.admin.deleteUser(staffId);
+    // 2. Auth Vault Deletion 
+    // Note: To completely remove the login credential from Supabase Auth, 
+    // you will need to trigger an Edge Function here in the future.
+    // await supabaseAdmin.auth.admin.deleteUser(staffId); 
+    
     fetchSystemData();
   };
 

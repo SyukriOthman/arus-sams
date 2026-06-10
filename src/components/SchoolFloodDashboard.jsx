@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { supabaseAdmin } from "../supabaseAdmin";
-
+import { supabase } from "../supabaseClient";
 
 export default function SchoolFloodDashboard({ schoolId }) {
   const [telemetry, setTelemetry] = useState([]);
@@ -16,8 +15,8 @@ export default function SchoolFloodDashboard({ schoolId }) {
     setLoading(true);
     
     try {
-      // 1. Fetch the 3 mapped stations for this specific school
-      const { data: mappings, error: mapError } = await supabaseAdmin
+      // 1. Fetch the 3 mapped stations for this specific school using the standard client
+      const { data: mappings, error: mapError } = await supabase
         .from("school_station")
         .select(`
           priority,
@@ -37,7 +36,8 @@ export default function SchoolFloodDashboard({ schoolId }) {
         mappings.map(async (mapping) => {
           const station = mapping.stations;
           
-          const { data: waterData, error: waterError } = await supabaseAdmin
+          // Use the standard client here as well
+          const { data: waterData, error: waterError } = await supabase
             .from("water_data")
             .select("water_level, status, recorded_at")
             .eq("station_id", station.station_id)
