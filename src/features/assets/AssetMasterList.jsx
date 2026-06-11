@@ -10,7 +10,8 @@ import {
   ChevronUpIcon,
   ChevronDownIcon,
   ArrowsUpDownIcon,
-  CheckCircleIcon
+  CheckCircleIcon,
+  MagnifyingGlassIcon
 } from "@heroicons/react/24/outline";
 import { supabase } from "../../supabaseClient";
 import EditAssetModal from "./EditAssetModal";
@@ -237,12 +238,18 @@ function QrModal({ asset, locationPath, schoolName, onClose }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
+const TABS = ["All", "Operational", "Pending Action", "In Repair", "Written Off"];
+
 export default function AssetMasterList({ schoolId, userRole, navigate }) {
   const [assets, setAssets] = useState([]);
   const [locationPaths, setLocationPaths] = useState({});
   const [lastUsageMap, setLastUsageMap] = useState({});
   const [schoolName, setSchoolName] = useState("");
   const [loading, setLoading] = useState(true);
+
+  // New State for Filtering
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeTab, setActiveTab] = useState("All");
 
   const [editingAsset, setEditingAsset] = useState(null);
   const [qrModalAsset, setQrModalAsset] = useState(null);
@@ -263,16 +270,38 @@ export default function AssetMasterList({ schoolId, userRole, navigate }) {
     }
   };
 
+  // 1. First layer of sorting: Text Search and Tabs
+  const filteredAssets = useMemo(() => {
+    return assets.filter(asset => {
+      // Text Search
+      const matchesSearch = 
+        (asset.asset_name || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
+        (asset.qr_code_id || "").toLowerCase().includes(searchTerm.toLowerCase());
+      
+      if (!matchesSearch) return false;
+
+      // Status Tab Filter
+      if (activeTab === "All") return true;
+      if (activeTab === "Operational" && asset.status === "Active") return true;
+      if (activeTab === "Pending Action" && (asset.status === "Audit Requested" || asset.status === "Disposal Requested")) return true;
+      if (activeTab === "In Repair" && (asset.status === "Under Maintenance" || asset.status === "Broken")) return true;
+      if (activeTab === "Written Off" && (asset.status === "Lost" || asset.status === "Disposed")) return true;
+
+      return false;
+    });
+  }, [assets, searchTerm, activeTab]);
+
+  // 2. Second layer: Sorting the filtered results
   const sortedAssets = useMemo(() => {
-    if (!sortField) return assets;
-    return [...assets].sort((a, b) => {
+    if (!sortField) return filteredAssets;
+    return [...filteredAssets].sort((a, b) => {
       const va = (a[sortField] || "").toString().toLowerCase();
       const vb = (b[sortField] || "").toString().toLowerCase();
       if (va < vb) return sortDir === "asc" ? -1 : 1;
       if (va > vb) return sortDir === "asc" ? 1 : -1;
       return 0;
     });
-  }, [assets, sortField, sortDir]);
+  }, [filteredAssets, sortField, sortDir]);
 
   const handleGenerateQR = async (assetId) => {
     setGeneratingQrFor(assetId);
@@ -497,6 +526,37 @@ export default function AssetMasterList({ schoolId, userRole, navigate }) {
 
       <AssetAnalytics assets={assets} title="School Asset Health Overview" />
 
+      {/* Filter and Search Bar */}
+      <Card className="p-4 flex flex-col lg:flex-row gap-4 justify-between items-start lg:items-center">
+        <div className="flex gap-2 overflow-x-auto pb-2 lg:pb-0 w-full lg:w-auto scrollbar-hide">
+          {TABS.map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-colors ${
+                activeTab === tab
+                  ? "bg-teal-600 text-white shadow-sm"
+                  : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+        <div className="relative w-full lg:w-72 flex-shrink-0">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon className="h-5 w-5 text-slate-400" />
+          </div>
+          <input 
+            type="text" 
+            placeholder="Search by name or QR..." 
+            value={searchTerm} 
+            onChange={(e) => setSearchTerm(e.target.value)} 
+            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all"
+          />
+        </div>
+      </Card>
+
       {/* Table */}
       <Card>
         <div className="overflow-x-auto">
@@ -547,7 +607,7 @@ export default function AssetMasterList({ schoolId, userRole, navigate }) {
                     colSpan={colSpan}
                     className="px-6 py-12 text-center text-slate-500"
                   >
-                    No assets found for this school.
+                    No assets match your search or filter.
                   </td>
                 </tr>
               ) : (
@@ -556,8 +616,9 @@ export default function AssetMasterList({ schoolId, userRole, navigate }) {
                   
                   // Status to Badge Variant mapping
                   let statusVariant = "neutral";
-                  if (asset.status === "Active") statusVariant = "active";
-                  else if (asset.status === "Under Maintenance") statusVariant = "warning";
+                  if (asset.status === "Active") statusVariant = "success";
+                  else if (asset.status === "Audit Requested" || asset.status === "Disposal Requested") statusVariant = "brand";
+                  else if (asset.status === "Under Maintenance" || asset.status === "Broken") statusVariant = "warning";
                   else if (asset.status === "Lost" || asset.status === "Disposed") statusVariant = "danger";
 
                   return (
@@ -603,7 +664,7 @@ export default function AssetMasterList({ schoolId, userRole, navigate }) {
                       {/* Usage Status (from last audit) */}
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         {usage ? (
-                          <Badge variant={usage === "In Use" ? "brand" : "neutral"}>
+                          <Badge variant={usage === "In Use" ? "success" : "neutral"}>
                             {usage}
                           </Badge>
                         ) : (
