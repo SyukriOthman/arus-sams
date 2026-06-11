@@ -4,11 +4,13 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return new Response('ok', { headers: corsHeaders, status: 200 })
   }
 
   try {
@@ -27,38 +29,23 @@ serve(async (req) => {
       fullName,
       role,
       icNumber,
-      schoolId,
-      password // Optional
+      schoolId
     } = await req.json()
 
     if (!userId) {
-      throw new Error("User ID is required")
-    }
-
-    // 1. If password is provided, update it in Auth
-    if (password) {
-      const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
-        userId,
-        { password: password }
+      return new Response(
+        JSON.stringify({ error: "User ID is required" }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
       )
-      if (authError) {
-        return new Response(
-          JSON.stringify({ error: `Failed to update auth password: ${authError.message}` }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
-      }
     }
 
-    // 2. Update the public.staff profile
+    // Update the public.staff profile (Zero Trust: No password handling here!)
     const updatePayload: any = {
       full_name: fullName,
       role: role,
       ic_number: icNumber,
       school_id: schoolId,
     }
-    
-    // We should also store the password in the public table if the original design did so
-    if (password) updatePayload.stored_password = password
 
     const { error: updateError } = await supabaseAdmin
       .from('staff')

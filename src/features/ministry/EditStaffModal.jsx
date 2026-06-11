@@ -24,7 +24,6 @@ export default function EditStaffModal({
   const [icNumber, setIcNumber] = useState(staff.ic_number || "");
   const [role, setRole] = useState(staff.role || "headmaster");
   const [schoolId, setSchoolId] = useState(staff.school_id || "");
-  const [password, setPassword] = useState(staff.stored_password || "");
 
   const handleUpdateStaff = async (e) => {
     e.preventDefault();
@@ -45,18 +44,23 @@ export default function EditStaffModal({
       schoolId: role === "superadmin" ? null : schoolId,
     };
 
-    // Only send password if it actually changed
-    if (password !== staff.stored_password) {
-      updatePayload.password = password;
-    }
-
     const { error } = await supabase.functions.invoke("update-staff-user", {
       body: updatePayload,
     });
 
     if (error) {
-      const contextError = error.context ? await error.context.json() : null;
-      const actualMessage = contextError?.error || error.message;
+      let actualMessage = error.message;
+      
+      // Attempt to extract deeper error message from Supabase Function response context
+      try {
+        if (error.context && typeof error.context.json === 'function') {
+          const contextError = await error.context.json();
+          actualMessage = contextError?.error || actualMessage;
+        }
+      } catch (e) {
+        console.error("Failed to parse error context:", e);
+      }
+
       setFormError("Update Error: " + actualMessage);
       setLoading(false);
     } else {
@@ -143,29 +147,15 @@ export default function EditStaffModal({
             </div>
 
             <div className="border-t border-slate-100 pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Input
-                    label="Login Email"
-                    type="email"
-                    disabled
-                    value={staff.email}
-                    className="bg-slate-50 text-slate-500 cursor-not-allowed border-slate-200"
-                  />
-                  <p className="mt-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Permanent ID</p>
-                </div>
-                <div>
-                  <Input
-                    label="Account Password"
-                    type="text"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    minLength={8}
-                    className="bg-red-50/30"
-                  />
-                  <p className="mt-1.5 text-[10px] font-bold text-red-400 uppercase tracking-widest">High-Security Field</p>
-                </div>
+              <div>
+                <Input
+                  label="Login Email"
+                  type="email"
+                  disabled
+                  value={staff.email}
+                  className="bg-slate-50 text-slate-500 cursor-not-allowed border-slate-200"
+                />
+                <p className="mt-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Permanent ID</p>
               </div>
             </div>
           </form>

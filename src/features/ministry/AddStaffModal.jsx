@@ -57,8 +57,17 @@ export default function AddStaffModal({ schools, onClose, refreshData }) {
     setStaffLoading(false);
 
     if (error) {
-      const contextError = error.context ? await error.context.json() : null;
-      const actualMessage = contextError?.error || error.message;
+      let actualMessage = error.message;
+      
+      try {
+        if (error.context && typeof error.context.json === 'function') {
+          const contextError = await error.context.json();
+          actualMessage = contextError?.error || actualMessage;
+        }
+      } catch (e) {
+        console.error("Failed to parse error context:", e);
+      }
+
       setStaffFormError("Registration Error: " + actualMessage);
     } else {
       refreshData();

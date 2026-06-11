@@ -62,10 +62,19 @@ export default function AdminAddStaffForm({ schoolId, onSuccess }) {
 
     setIsUploading(false);
 
-    // Step 3: Deep error extraction
+    // Step 3: Robust error extraction
     if (error) {
-        const contextError = error.context ? await error.context.json() : null;
-        const actualMessage = contextError?.error || error.message;
+        let actualMessage = error.message;
+        
+        try {
+          if (error.context && typeof error.context.json === 'function') {
+            const contextError = await error.context.json();
+            actualMessage = contextError?.error || actualMessage;
+          }
+        } catch (e) {
+          console.error("Failed to parse error context:", e);
+        }
+
         alert("Registration Failed: " + actualMessage);
     } else {
         alert("Comprehensive Staff Profile Registered Successfully!");
