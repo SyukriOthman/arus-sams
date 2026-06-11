@@ -7,7 +7,7 @@ import {
   PhoneIcon 
 } from "@heroicons/react/24/outline";
 
-export default function Auth({ onDemoLogin }) {
+export default function Auth({ onDemoLogin, navigate }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -95,8 +95,19 @@ export default function Auth({ onDemoLogin }) {
                 required
               />
             </div>
+            
             <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Access Password</label>
+              {/* INJECTED FORGOT PASSWORD FLEX CONTAINER */}
+              <div className="flex items-center justify-between mb-2">
+                <label className="block text-xs font-bold text-slate-500 uppercase">Access Password</label>
+                <button 
+                  type="button"
+                  onClick={() => navigate("forgot-password")}
+                  className="text-xs font-bold text-teal-600 hover:text-teal-700 transition-colors"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               <input 
                 type="password" placeholder="••••••••"
                 value={password}
@@ -105,6 +116,7 @@ export default function Auth({ onDemoLogin }) {
                 required
               />
             </div>
+
             <button 
               type="submit"
               disabled={loading}

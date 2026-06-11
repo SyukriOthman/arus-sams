@@ -12,12 +12,14 @@ import AlertBanner from "./components/AlertBanner";
 // Auth Identity
 import Auth from "./features/auth/Auth";
 import UserProfile from "./features/auth/UserProfile";
+import ForgotPassword from "./features/auth/ForgotPassword"; // NEW
+import UpdatePassword from "./features/auth/UpdatePassword"; // NEW
 
 // Ministry (Super Admin)
 import SuperAdminDashboard from "./features/ministry/SuperAdminDashboard";
 
 // School Admin (Headmaster)
-import AdminDashboard from "./features/school/AdminDashboard"; // Fixed path!
+import AdminDashboard from "./features/school/AdminDashboard"; 
 import SchoolProfile from "./components/SchoolProfile";
 
 // Telemetry (iHYDRO)
@@ -54,10 +56,20 @@ function App() {
     setSidebarOpen(false);
   };
 
-  // Authentication Check
-  if (!session) return <Auth onDemoLogin={handleDemoLogin} />;
+  // --- UNAUTHENTICATED ROUTING ---
+  // If the user is not logged in, only allow them to see Auth-related pages
+  if (!session) {
+    if (currentTab === "forgot-password") {
+      return <ForgotPassword navigate={navigate} />;
+    }
+    if (currentTab === "update-password") {
+      return <UpdatePassword navigate={navigate} />;
+    }
+    // Default fallback is the Login screen (pass navigate so the Forgot Password button works!)
+    return <Auth onDemoLogin={handleDemoLogin} navigate={navigate} />;
+  }
 
-  // Main UI Render
+  // --- MAIN UI RENDER (AUTHENTICATED) ---
   return (
     <div className="flex h-screen bg-slate-100 font-sans relative overflow-hidden">
       <AlertBanner isCritical={isCritical} />
