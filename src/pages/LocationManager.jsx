@@ -61,43 +61,6 @@ function SchoolSelectionView({ schools, loading, onSelect }) {
   );
 }
 
-// ── Sub-component: Location Header ───────────────────────────────────────────
-function LocationHeader({ isSuperadmin, selectedSchoolName, onBack, onAddBlock, canEdit }) {
-  return (
-    <div className="mb-8">
-      {isSuperadmin && (
-        <Button 
-          variant="secondary" 
-          onClick={onBack} 
-          className="mb-6 h-9 px-3 text-xs"
-        >
-          <ArrowLeftIcon className="w-3.5 h-3.5" />
-          Back to Schools
-        </Button>
-      )}
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Location Manager</h1>
-          {isSuperadmin && selectedSchoolName && (
-            <div className="flex items-center gap-2 mt-2">
-              <Badge variant="brand">{selectedSchoolName}</Badge>
-            </div>
-          )}
-          <p className="text-sm text-slate-500 mt-3 font-medium leading-relaxed max-w-xl">
-            Configure the physical location hierarchy for flood risk calculation and infrastructure mapping.
-          </p>
-        </div>
-        {canEdit && (
-          <Button onClick={onAddBlock} variant="primary" className="shadow-lg shadow-teal-600/20">
-            <PlusIcon className="w-5 h-5" />
-            Add Block
-          </Button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ── Sub-component: Location Legend ───────────────────────────────────────────
 function LocationLegend() {
   return (
@@ -301,7 +264,7 @@ export default function LocationManager({ user, schoolId }) {
 
   if (isSuperadmin && !selectedSchoolId) {
     return (
-      <div className="max-w-4xl mx-auto px-4 py-10">
+      <div className="w-full max-w-7xl p-4 md:p-8 py-10">
         <div className="mb-10 text-center md:text-left">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Location Manager</h1>
           <p className="text-slate-500 mt-2 font-medium">
@@ -315,14 +278,15 @@ export default function LocationManager({ user, schoolId }) {
         />
       </div>
     )
-    }
+  }
 
-    if (loading) return (
+  if (loading) return (
     <div className="flex flex-col items-center justify-center h-screen gap-4">
       <ClockIcon className="w-10 h-10 text-teal-600 animate-spin" />
       <p className="text-slate-500 font-bold tracking-widest uppercase text-xs">Generating Tree</p>
     </div>
-    )
+  )
+  
   if (error) return (
     <div className="max-w-2xl mx-auto mt-20 p-6 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-4">
       <div className="bg-red-500 p-2 rounded-lg">
@@ -336,14 +300,42 @@ export default function LocationManager({ user, schoolId }) {
   )
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
-      <LocationHeader 
-        isSuperadmin={isSuperadmin}
-        selectedSchoolName={selectedSchoolName}
-        onBack={handleBackToSchools}
-        onAddBlock={handleAddBlock}
-        canEdit={canEdit}
-      />
+    <div className="w-full max-w-7xl p-4 md:p-8 pb-28 fade-in">
+      
+      {/* 1. Integrated Header (Fixed Flex Alignment) */}
+      <div className="mb-8">
+        {isSuperadmin && (
+          <Button 
+            variant="secondary" 
+            onClick={handleBackToSchools} 
+            className="mb-6 h-9 px-3 text-xs"
+          >
+            <ArrowLeftIcon className="w-3.5 h-3.5 mr-1" />
+            Back to Schools
+          </Button>
+        )}
+        
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">Location Manager</h1>
+            {isSuperadmin && selectedSchoolName && (
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant="brand">{selectedSchoolName}</Badge>
+              </div>
+            )}
+            <p className="text-sm text-slate-500 mt-2">
+              Configure the physical location hierarchy for flood risk calculation and infrastructure mapping.
+            </p>
+          </div>
+          
+          {canEdit && (
+            <Button onClick={handleAddBlock} variant="primary" className="shadow-md shadow-teal-600/20 whitespace-nowrap">
+              <PlusIcon className="w-5 h-5 mr-1" />
+              Add Block
+            </Button>
+          )}
+        </div>
+      </div>
 
       <LocationLegend />
 
