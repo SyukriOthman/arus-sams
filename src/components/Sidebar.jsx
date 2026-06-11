@@ -14,6 +14,58 @@ import {
   XMarkIcon 
 } from "@heroicons/react/24/outline";
 
+const NAV_ITEMS = [
+  {
+    id: "locations",
+    label: "Location Manager",
+    icon: MapPinIcon,
+    allowedRoles: ["superadmin", "headmaster", "asset_teacher", "standard_teacher"]
+  },
+  {
+    id: "mobile-audit",
+    label: "QR Audit Input",
+    icon: QrCodeIcon,
+    allowedRoles: ["headmaster", "asset_teacher"]
+  },
+  {
+    id: "hydrological-simulator",
+    label: "iHYDRO Simulation Panel",
+    icon: VariableIcon,
+    allowedRoles: ["superadmin", "headmaster"]
+  },
+  {
+    id: "school",
+    label: "School Profile",
+    icon: BuildingOfficeIcon,
+    allowedRoles: ["headmaster", "asset_teacher", "standard_teacher"]
+  },
+  {
+    id: "admin-management",
+    label: "Manage School Staff",
+    icon: UsersIcon,
+    allowedRoles: ["headmaster"],
+    hasDivider: true
+  },
+  {
+    id: "asset-master-list",
+    label: "Master Asset List",
+    icon: ArchiveBoxIcon,
+    allowedRoles: ["headmaster", "asset_teacher", "standard_teacher"]
+  },
+  {
+    id: "asset-registration",
+    label: "Asset Registration",
+    icon: PencilSquareIcon,
+    allowedRoles: ["headmaster", "asset_teacher"]
+  },
+  {
+    id: "super-dashboard",
+    label: "Ministry Portal",
+    icon: ShieldCheckIcon,
+    allowedRoles: ["superadmin"]
+  }
+];
+
 export default function Sidebar({ session, userRole, currentTab, navigate, handleSignOut, sidebarOpen, setSidebarOpen }) {
   const role = session?.role || userRole || "";
   
@@ -51,79 +103,16 @@ export default function Sidebar({ session, userRole, currentTab, navigate, handl
             </button>
           </div>
           <div className="space-y-1">
-            <button 
-              onClick={() => navigate("locations")} 
-              className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded transition-colors ${currentTab === "locations" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
-            >
-              <MapPinIcon className="w-5 h-5" />
-              Location Manager
-            </button>
-            
-            <button 
-              onClick={() => navigate("mobile-audit")} 
-              className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded transition-colors ${currentTab === "mobile-audit" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
-            >
-              <QrCodeIcon className="w-5 h-5" />
-              QR Audit Input
-            </button>
-            
-            <button 
-              onClick={() => navigate("hydrological-simulator")} 
-              className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded transition-colors ${currentTab === "hydrological-simulator" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
-            >
-              <VariableIcon className="w-5 h-5" />
-              iHYDRO Simulation Panel
-            </button>
-            
-            {userRole !== "superadmin" && (
+            {NAV_ITEMS.filter(item => item.allowedRoles.includes(userRole)).map((item) => (
               <button 
-                onClick={() => navigate("school")} 
-                className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded transition-colors ${currentTab === "school" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
+                key={item.id}
+                onClick={() => navigate(item.id)} 
+                className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded transition-colors ${item.hasDivider ? "border-t border-slate-800 mt-4 pt-4" : ""} ${currentTab === item.id ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
               >
-                <BuildingOfficeIcon className="w-5 h-5" />
-                School Profile
+                <item.icon className="w-5 h-5" />
+                {item.label}
               </button>
-            )}
-            
-            {userRole === "headmaster" && (
-              <button 
-                onClick={() => navigate("admin-management")} 
-                className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded transition-colors border-t border-slate-800 mt-4 pt-4 ${currentTab === "admin-management" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
-              >
-                <UsersIcon className="w-5 h-5" />
-                Manage School Staff
-              </button>
-            )}
-            
-            {userRole !== "superadmin" && (
-              <button 
-                onClick={() => navigate("asset-master-list")} 
-                className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded transition-colors ${currentTab === "asset-master-list" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
-              >
-                <ArchiveBoxIcon className="w-5 h-5" />
-                Master Asset List
-              </button>
-            )}
-            
-            {userRole !== "standard_teacher" && userRole !== "superadmin" && (
-              <button 
-                onClick={() => navigate("asset-registration")} 
-                className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded transition-colors ${currentTab === "asset-registration" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
-              >
-                <PencilSquareIcon className="w-5 h-5" />
-                Asset Registration
-              </button>
-            )}
-            
-            {userRole === "superadmin" && (
-              <button 
-                onClick={() => navigate("super-dashboard")} 
-                className={`flex items-center gap-3 w-full text-left px-4 py-3 rounded transition-colors ${currentTab === "super-dashboard" ? "bg-teal-600 font-medium" : "hover:bg-slate-800 text-slate-300"}`}
-              >
-                <ShieldCheckIcon className="w-5 h-5" />
-                Ministry Portal
-              </button>
-            )}
+            ))}
           </div>
         </div>
         <div className="pt-6 border-t border-slate-800">
