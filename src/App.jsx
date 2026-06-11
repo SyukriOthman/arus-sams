@@ -94,7 +94,7 @@ function App() {
             <SchoolProfile school_id={userSchoolId} userRole={userRole} />
           )}
           {currentTab === "asset-master-list" && (
-            <AssetMasterList schoolId={userSchoolId} userRole={userRole} />
+            <AssetMasterList schoolId={userSchoolId} userRole={userRole} navigate={navigate} />
           )}
           {currentTab === "locations" && (
             <LocationManager user={session} schoolId={userSchoolId} />

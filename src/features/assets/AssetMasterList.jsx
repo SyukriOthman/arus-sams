@@ -239,14 +239,13 @@ function QrModal({ asset, locationPath, schoolName, onClose }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export default function AssetMasterList({ schoolId, userRole }) {
+export default function AssetMasterList({ schoolId, userRole, navigate }) {
   const [assets, setAssets] = useState([]);
   const [locationPaths, setLocationPaths] = useState({});
   const [lastUsageMap, setLastUsageMap] = useState({});
   const [schoolName, setSchoolName] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
   const [qrModalAsset, setQrModalAsset] = useState(null);
   const [qrToast, setQrToast] = useState(null);
@@ -505,7 +504,7 @@ export default function AssetMasterList({ schoolId, userRole }) {
             )}
             {canEdit && (
               <Button
-                onClick={() => setIsAddModalOpen(true)}
+                onClick={() => navigate("asset-registration")}
                 className="px-4 py-2.5 text-sm"
               >
                 <PlusIcon className="w-4 h-4" />
@@ -688,15 +687,6 @@ export default function AssetMasterList({ schoolId, userRole }) {
           </table>
         </div>
       </Card>
-
-      {/* Modals */}
-      {isAddModalOpen && (
-        <AddAssetModal
-          schoolId={schoolId}
-          onClose={() => setIsAddModalOpen(false)}
-          refreshData={fetchData}
-        />
-      )}
 
       {editingAsset && (
         <EditAssetModal
