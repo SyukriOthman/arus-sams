@@ -1,22 +1,26 @@
 import { useState } from 'react'
 import { toggleSafeZone, deleteLocation, getCumulativeElevation } from '../hooks/useLocations'
+import Badge from './ui/Badge'
+import Button from './ui/Button'
+import { 
+  ChevronDownIcon, 
+  ChevronRightIcon, 
+  PlusIcon, 
+  TrashIcon, 
+  CheckCircleIcon,
+  ShieldCheckIcon
+} from '@heroicons/react/24/outline'
 
-const TYPE_COLORS = {
-  block: 'bg-blue-50 border-blue-300',
-  floor: 'bg-green-50 border-green-300',
-  room:  'bg-yellow-50 border-yellow-300',
-}
-
-const TYPE_BADGE = {
-  block: 'bg-blue-100 text-blue-700 border-blue-300',
-  floor: 'bg-green-100 text-green-700 border-green-300',
-  room:  'bg-yellow-100 text-yellow-700 border-yellow-300',
+const TYPE_VARIANTS = {
+  block: 'brand',
+  floor: 'warning',
+  room:  'neutral',
 }
 
 const TYPE_INDENT = {
   block: 'ml-0',
-  floor: 'ml-3 md:ml-6',
-  room:  'ml-6 md:ml-12',
+  floor: 'ml-4 md:ml-8',
+  room:  'ml-8 md:ml-16',
 }
 
 export default function LocationTreeNode({ node, flatList, onReload, onAddChild, canEdit }) {
@@ -48,68 +52,72 @@ export default function LocationTreeNode({ node, flatList, onReload, onAddChild,
   }
 
   return (
-    <div className={`${TYPE_INDENT[node.location_type] || 'ml-0'} mb-2`}>
-      <div className={`p-3 rounded-lg border ${TYPE_COLORS[node.location_type] || 'bg-gray-100'}`}>
+    <div className={`${TYPE_INDENT[node.location_type] || 'ml-0'} mb-3`}>
+      <div className={`p-4 rounded-xl border border-slate-200 bg-white shadow-sm transition-all hover:shadow-md ${node.is_safe_zone ? 'border-teal-200 bg-teal-50/30' : ''}`}>
 
         {/* Top row — expand toggle + name + type badge */}
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-3">
           {hasChildren ? (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="text-gray-500 w-5 text-xs font-bold mt-0.5 flex-shrink-0"
+              className="text-slate-400 p-1 hover:bg-slate-100 rounded-lg transition-colors mt-0.5 flex-shrink-0"
             >
-              {expanded ? '▼' : '▶'}
+              {expanded ? <ChevronDownIcon className="w-4 h-4" /> : <ChevronRightIcon className="w-4 h-4" />}
             </button>
           ) : (
-            <span className="w-5 flex-shrink-0" />
+            <div className="w-6 flex-shrink-0" />
           )}
 
           <div className="flex-1 min-w-0">
             {/* Name + badges row */}
-            <div className="flex items-center flex-wrap gap-1.5">
-              <span className="font-semibold text-sm text-gray-800">{node.location_name}</span>
-              <span className={`text-xs px-2 py-0.5 rounded-full border capitalize font-medium ${TYPE_BADGE[node.location_type]}`}>
+            <div className="flex items-center flex-wrap gap-2">
+              <span className="font-bold text-slate-800">{node.location_name}</span>
+              <Badge variant={TYPE_VARIANTS[node.location_type]}>
                 {node.location_type}
-              </span>
+              </Badge>
               {node.is_safe_zone && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500 text-white font-medium">
-                  ✓ Safe Zone
-                </span>
+                <Badge variant="active" icon={ShieldCheckIcon}>
+                  Safe Zone
+                </Badge>
               )}
             </div>
 
             {/* Elevation info */}
-            <div className="text-xs mt-1 text-gray-500">
-              Offset: +{node.elevation_offset}cm &nbsp;·&nbsp; Absolute: {cumulative}cm
+            <div className="text-[11px] mt-1.5 text-slate-500 font-medium flex items-center gap-2">
+              <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">Offset: +{node.elevation_offset}cm</span>
+              <span className="w-1 h-1 bg-slate-300 rounded-full"></span>
+              <span className="text-teal-600 font-bold">Absolute: {cumulative}cm</span>
             </div>
 
-            {/* Action buttons — shown below info on all screens */}
+            {/* Action buttons */}
             {canEdit && (
-              <div className="flex flex-wrap gap-1.5 mt-2">
+              <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-slate-50">
                 {node.location_type !== 'room' && (
-                  <button
+                  <Button
                     onClick={() => onAddChild(node)}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium"
+                    variant="secondary"
+                    className="h-8 px-3 text-[11px] font-bold"
                   >
-                    + {node.location_type === 'block' ? 'Add Floor' : 'Add Room'}
-                  </button>
+                    <PlusIcon className="w-3.5 h-3.5" />
+                    {node.location_type === 'block' ? 'Add Floor' : 'Add Room'}
+                  </Button>
                 )}
-                <button
+                <Button
                   onClick={handleToggleSafeZone}
-                  className={`text-xs px-3 py-1.5 rounded-lg border font-medium transition-colors ${
-                    node.is_safe_zone
-                      ? 'bg-emerald-500 text-white border-emerald-500'
-                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
-                  }`}
+                  variant={node.is_safe_zone ? 'primary' : 'secondary'}
+                  className={`h-8 px-3 text-[11px] font-bold ${node.is_safe_zone ? 'bg-teal-600 text-white' : ''}`}
                 >
-                  {node.is_safe_zone ? '✓ Safe' : 'Set Safe'}
-                </button>
-                <button
+                  <CheckCircleIcon className="w-3.5 h-3.5" />
+                  {node.is_safe_zone ? 'Safe' : 'Set Safe'}
+                </Button>
+                <Button
                   onClick={handleDelete}
-                  className="text-xs px-3 py-1.5 rounded-lg bg-white border border-red-200 text-red-500 hover:bg-red-50"
+                  variant="danger"
+                  className="h-8 px-3 text-[11px] font-bold"
                 >
+                  <TrashIcon className="w-3.5 h-3.5" />
                   Delete
-                </button>
+                </Button>
               </div>
             )}
           </div>
@@ -117,7 +125,7 @@ export default function LocationTreeNode({ node, flatList, onReload, onAddChild,
       </div>
 
       {expanded && hasChildren && (
-        <div className="mt-1">
+        <div className="mt-2 space-y-1">
           {node.children.map(child => (
             <LocationTreeNode
               key={child.location_id}

@@ -1,8 +1,200 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../supabaseClient'
-import { useLocations, addLocation, getCumulativeElevation } from '../hooks/useLocations'
-import LocationTreeNode from '../components/LocationTreeNode'
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
+import { useLocations, addLocation, getCumulativeElevation } from '../hooks/useLocations';
+import LocationTreeNode from '../components/LocationTreeNode';
 
+import Card from "../components/ui/Card";
+import Button from "../components/ui/Button";
+import Badge from "../components/ui/Badge";
+import Input from "../components/ui/Input";
+import Select from "../components/ui/Select";
+import { 
+  ArrowLeftIcon, 
+  PlusIcon, 
+  ChevronRightIcon, 
+  CheckIcon,
+  MapPinIcon,
+  BuildingOfficeIcon,
+  ClockIcon
+} from "@heroicons/react/24/outline";
+
+// ── Sub-component: School Selection View (Superadmin) ────────────────────────
+function SchoolSelectionView({ schools, loading, onSelect }) {
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-slate-400 gap-3">
+        <ClockIcon className="w-8 h-8 animate-spin" />
+        <p className="font-medium">Loading schools</p>
+      </div>
+    );
+  }
+
+  if (schools.length === 0) {
+    return (
+      <div className="text-center py-20 px-6 bg-slate-50 border-2 border-dashed rounded-2xl border-slate-200">
+        <BuildingOfficeIcon className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+        <p className="text-lg font-bold text-slate-600">No schools in database</p>
+        <p className="text-sm text-slate-400 mt-2">Add schools via Ministry Management first.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid gap-4">
+      {schools.map(school => (
+        <Card key={school.school_id} className="group">
+          <button
+            onClick={() => onSelect(school)}
+            className="w-full text-left p-5 hover:bg-slate-50 transition-all flex items-center justify-between"
+          >
+            <div>
+              <p className="font-bold text-slate-800 text-lg">{school.school_name}</p>
+              {school.school_code && (
+                <p className="text-xs font-mono text-slate-400 mt-1 uppercase tracking-widest">{school.school_code}</p>
+              )}
+            </div>
+            <ChevronRightIcon className="w-5 h-5 text-teal-500 opacity-0 group-hover:opacity-100 transition-all transform group-hover:translate-x-1" />
+          </button>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// ── Sub-component: Location Header ───────────────────────────────────────────
+function LocationHeader({ isSuperadmin, selectedSchoolName, onBack, onAddBlock, canEdit }) {
+  return (
+    <div className="mb-8">
+      {isSuperadmin && (
+        <Button 
+          variant="secondary" 
+          onClick={onBack} 
+          className="mb-6 h-9 px-3 text-xs"
+        >
+          <ArrowLeftIcon className="w-3.5 h-3.5" />
+          Back to Schools
+        </Button>
+      )}
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Location Manager</h1>
+          {isSuperadmin && selectedSchoolName && (
+            <div className="flex items-center gap-2 mt-2">
+              <Badge variant="brand">{selectedSchoolName}</Badge>
+            </div>
+          )}
+          <p className="text-sm text-slate-500 mt-3 font-medium leading-relaxed max-w-xl">
+            Configure the physical location hierarchy for flood risk calculation and infrastructure mapping.
+          </p>
+        </div>
+        {canEdit && (
+          <Button onClick={onAddBlock} variant="primary" className="shadow-lg shadow-teal-600/20">
+            <PlusIcon className="w-5 h-5" />
+            Add Block
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Sub-component: Location Legend ───────────────────────────────────────────
+function LocationLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-3 mb-8 p-4 bg-slate-50 rounded-xl border border-slate-200">
+      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mr-2">Hierarchy</p>
+      <Badge variant="brand">Block</Badge>
+      <Badge variant="warning">Floor</Badge>
+      <Badge variant="neutral">Room</Badge>
+      <div className="h-4 w-px bg-slate-200 mx-1"></div>
+      <Badge variant="active" icon={CheckIcon}>Safe Zone</Badge>
+    </div>
+  );
+}
+
+// ── Sub-component: Add Location Modal ────────────────────────────────────────
+function AddLocationModal({ parentNode, form, setForm, onSave, onCancel, saving, formError, locations, getCumulativeElevation, getChildType }) {
+  return (
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-md shadow-2xl animate-in fade-in zoom-in duration-200">
+        <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+          <h2 className="text-xl font-bold text-slate-800">
+            {parentNode
+              ? `Add ${getChildType(parentNode)} to "${parentNode.location_name}"`
+              : 'Add New Block'}
+          </h2>
+        </div>
+
+        <div className="p-6 space-y-6">
+          {formError && (
+            <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-lg">
+              {formError}
+            </div>
+          )}
+
+          <Input
+            label="Location Name"
+            required
+            value={form.location_name}
+            onChange={e => setForm({ ...form, location_name: e.target.value })}
+            placeholder={
+              form.location_type === 'block' ? 'e.g. Block A' :
+              form.location_type === 'floor' ? 'e.g. Ground Floor' : 'e.g. Room 101'
+            }
+          />
+
+          <div>
+            <Input
+              label="Elevation Offset (cm)"
+              type="number"
+              value={form.elevation_offset}
+              onChange={e => setForm({ ...form, elevation_offset: e.target.value })}
+              min="0"
+            />
+            <p className="text-[11px] text-slate-400 mt-2 font-medium leading-relaxed">
+              {form.location_type === 'block' && "Height of this block ground above school reference point."}
+              {form.location_type === 'floor' && 'Height above the block ground. Standard = 300cm per floor.'}
+              {form.location_type === 'room' && 'Usually 0cm — only change if room is on a raised platform.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-xl border border-slate-100">
+            <input
+              type="checkbox"
+              id="is_safe_zone"
+              checked={form.is_safe_zone}
+              onChange={e => setForm({ ...form, is_safe_zone: e.target.checked })}
+              className="w-5 h-5 rounded border-slate-300 text-teal-600 focus:ring-teal-500 accent-teal-600"
+            />
+            <label htmlFor="is_safe_zone" className="text-sm font-bold text-slate-700 cursor-pointer">
+              Mark as Safe Zone
+            </label>
+          </div>
+
+          {parentNode && (
+            <div className="p-4 bg-teal-50 rounded-xl border border-teal-100">
+              <p className="text-[10px] font-bold text-teal-600 uppercase tracking-widest mb-1">Estimated Elevation</p>
+              <p className="text-sm font-bold text-teal-900">
+                {getCumulativeElevation(parentNode, locations) + Number(form.elevation_offset)}cm above ground
+              </p>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-4 border-t border-slate-100">
+            <Button onClick={onCancel} variant="secondary" className="flex-1">
+              Cancel
+            </Button>
+            <Button onClick={onSave} disabled={saving} variant="primary" className="flex-1">
+              {saving ? 'Saving...' : 'Save Location'}
+            </Button>
+          </div>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// ── Main Component ───────────────────────────────────────────────────────────
 export default function LocationManager({ user, schoolId }) {
   const isSuperadmin = !schoolId
 
@@ -105,115 +297,68 @@ export default function LocationManager({ user, schoolId }) {
     }
   }
 
-  // ── Superadmin: school picker (no school selected yet) ──
+  // ── Render Logic ───────────────────────────────────────────────────────────
+
   if (isSuperadmin && !selectedSchoolId) {
     return (
-      <div className="max-w-3xl mx-auto p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">Location Manager</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Select a school to view and manage its location hierarchy.
+      <div className="max-w-4xl mx-auto px-4 py-10">
+        <div className="mb-10 text-center md:text-left">
+          <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Location Manager</h1>
+          <p className="text-slate-500 mt-2 font-medium">
+            Select a school to manage its infrastructure and risk zones.
           </p>
         </div>
-
-        {schoolsLoading ? (
-          <div className="flex items-center justify-center h-40 text-gray-400">
-            Loading schools...
-          </div>
-        ) : schools.length === 0 ? (
-          <div className="text-center py-16 text-gray-400 border-2 border-dashed rounded-xl">
-            <p className="text-lg font-medium">No schools in the database.</p>
-            <p className="text-sm mt-1">Add schools via Ministry Management first.</p>
-          </div>
-        ) : (
-          <div className="grid gap-3">
-            {schools.map(school => (
-              <button
-                key={school.school_id}
-                onClick={() => handleSelectSchool(school)}
-                className="w-full text-left p-4 bg-white rounded-xl border border-slate-200 hover:border-teal-500 hover:shadow-md transition-all group"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-slate-800">{school.school_name}</p>
-                    {school.school_code && (
-                      <p className="text-xs text-slate-400 mt-0.5">{school.school_code}</p>
-                    )}
-                  </div>
-                  <span className="text-teal-500 opacity-0 group-hover:opacity-100 transition-opacity text-sm font-medium">
-                    Manage →
-                  </span>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
+        <SchoolSelectionView 
+          schools={schools} 
+          loading={schoolsLoading} 
+          onSelect={handleSelectSchool} 
+        />
       </div>
     )
-  }
+    }
 
-  // ── Location tree (headmaster, or superadmin after selecting a school) ──
-  if (loading) return (
-    <div className="flex items-center justify-center h-64">
-      <div className="text-gray-500">Loading location tree...</div>
+    if (loading) return (
+    <div className="flex flex-col items-center justify-center h-screen gap-4">
+      <ClockIcon className="w-10 h-10 text-teal-600 animate-spin" />
+      <p className="text-slate-500 font-bold tracking-widest uppercase text-xs">Generating Tree</p>
+    </div>
+    )
+  if (error) return (
+    <div className="max-w-2xl mx-auto mt-20 p-6 bg-red-50 border border-red-100 rounded-2xl flex items-center gap-4">
+      <div className="bg-red-500 p-2 rounded-lg">
+        <MapPinIcon className="w-6 h-6 text-white" />
+      </div>
+      <div>
+        <p className="text-red-800 font-bold">System Error</p>
+        <p className="text-red-600 text-sm">{error}</p>
+      </div>
     </div>
   )
 
-  if (error) return (
-    <div className="p-4 bg-red-50 text-red-700 rounded-lg">Error: {error}</div>
-  )
-
   return (
-    <div className="max-w-3xl mx-auto p-4 md:p-6">
-      {/* Header */}
-      <div className="mb-5">
-        {isSuperadmin && (
-          <button
-            onClick={handleBackToSchools}
-            className="text-sm text-teal-600 hover:text-teal-700 mb-2 flex items-center gap-1"
-          >
-            ← Back to Schools
-          </button>
-        )}
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h1 className="text-xl md:text-2xl font-bold text-gray-800">Location Manager</h1>
-            {isSuperadmin && selectedSchoolName && (
-              <p className="text-sm font-medium text-teal-600 mt-0.5">{selectedSchoolName}</p>
-            )}
-            <p className="text-xs md:text-sm text-gray-500 mt-1">
-              Manage the school's physical location hierarchy for flood risk calculation.
-            </p>
-          </div>
-          {canEdit && (
-            <button
-              onClick={handleAddBlock}
-              className="flex-shrink-0 px-3 py-2 bg-teal-600 text-white rounded-lg text-sm font-medium hover:bg-teal-700"
-            >
-              + Add Block
-            </button>
-          )}
-        </div>
-      </div>
+    <div className="max-w-4xl mx-auto px-4 py-8 md:py-12">
+      <LocationHeader 
+        isSuperadmin={isSuperadmin}
+        selectedSchoolName={selectedSchoolName}
+        onBack={handleBackToSchools}
+        onAddBlock={handleAddBlock}
+        canEdit={canEdit}
+      />
 
-      {/* Legend */}
-      <div className="flex flex-wrap gap-2 mb-4 text-xs">
-        <span className="px-2 py-1 rounded border bg-blue-100 text-blue-800 border-blue-300">Block</span>
-        <span className="px-2 py-1 rounded border bg-green-100 text-green-800 border-green-300">Floor</span>
-        <span className="px-2 py-1 rounded border bg-yellow-100 text-yellow-800 border-yellow-300">Room</span>
-        <span className="px-2 py-1 rounded bg-emerald-500 text-white">✓ Safe Zone</span>
-      </div>
+      <LocationLegend />
 
-      {/* Tree */}
       {tree.length === 0 ? (
-        <div className="text-center py-16 text-gray-400 border-2 border-dashed rounded-xl">
-          <p className="text-lg">No locations yet.</p>
+        <div className="text-center py-24 px-6 bg-slate-50 border-2 border-dashed rounded-3xl border-slate-200">
+          <MapPinIcon className="w-16 h-16 text-slate-300 mx-auto mb-6" />
+          <p className="text-xl font-bold text-slate-700">Infrastructure Empty</p>
           {canEdit && (
-            <p className="text-sm mt-1">Click <strong>+ Add Block</strong> to get started.</p>
+            <p className="text-sm text-slate-500 mt-2 max-w-xs mx-auto">
+              No blocks or rooms have been mapped. Start by adding a building block.
+            </p>
           )}
         </div>
       ) : (
-        <div>
+        <div className="space-y-4">
           {tree.map(node => (
             <LocationTreeNode
               key={node.location_id}
@@ -227,96 +372,19 @@ export default function LocationManager({ user, schoolId }) {
         </div>
       )}
 
-      {/* Add Node Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-            <h2 className="text-lg font-bold mb-4">
-              {parentNode
-                ? `Add ${getChildType(parentNode)} to "${parentNode.location_name}"`
-                : 'Add New Block'}
-            </h2>
-
-            {formError && (
-              <div className="mb-3 p-2 bg-red-50 text-red-600 text-sm rounded">{formError}</div>
-            )}
-
-            {/* Location Name */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Location Name <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={form.location_name}
-                onChange={e => setForm({ ...form, location_name: e.target.value })}
-                placeholder={
-                  form.location_type === 'block' ? 'e.g. Block A' :
-                  form.location_type === 'floor' ? 'e.g. Ground Floor' : 'e.g. Room 101'
-                }
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-
-            {/* Elevation Offset */}
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Elevation Offset (cm)
-              </label>
-              <input
-                type="number"
-                value={form.elevation_offset}
-                onChange={e => setForm({ ...form, elevation_offset: e.target.value })}
-                min="0"
-                className="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-              <p className="text-xs text-gray-400 mt-1">
-                {form.location_type === 'block' && "Height of this block's ground above school reference point."}
-                {form.location_type === 'floor' && 'Height above the block ground. Standard = 300cm per floor.'}
-                {form.location_type === 'room' && 'Usually 0cm — only change if room is on a raised platform.'}
-              </p>
-            </div>
-
-            {/* Is Safe Zone */}
-            <div className="mb-6 flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="is_safe_zone"
-                checked={form.is_safe_zone}
-                onChange={e => setForm({ ...form, is_safe_zone: e.target.checked })}
-                className="w-4 h-4 accent-emerald-500"
-              />
-              <label htmlFor="is_safe_zone" className="text-sm text-gray-700">
-                Mark as Safe Zone (valid evacuation destination)
-              </label>
-            </div>
-
-            {/* Cumulative elevation preview */}
-            {parentNode && (
-              <div className="mb-4 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
-                <strong>Estimated absolute elevation:</strong>{' '}
-                {getCumulativeElevation(parentNode, locations) + Number(form.elevation_offset)}cm above school ground
-              </div>
-            )}
-
-            {/* Buttons */}
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-sm rounded-lg border hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                disabled={saving}
-                className="px-4 py-2 text-sm rounded-lg bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save Location'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <AddLocationModal 
+          parentNode={parentNode}
+          form={form}
+          setForm={setForm}
+          onSave={handleSubmit}
+          onCancel={() => setShowModal(false)}
+          saving={saving}
+          formError={formError}
+          locations={locations}
+          getCumulativeElevation={getCumulativeElevation}
+          getChildType={getChildType}
+        />
       )}
     </div>
   )
