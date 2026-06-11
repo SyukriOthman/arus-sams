@@ -52,6 +52,7 @@ const SchoolProfile = ({ school_id, userRole }) => {
 
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
 
   const canEdit = userRole === "superadmin" || userRole === "headmaster";
 
@@ -136,6 +137,7 @@ const SchoolProfile = ({ school_id, userRole }) => {
 
       alert("School Profile Updated Successfully!");
       setIsEditing(false);
+      setDashboardRefreshKey(prev => prev + 1);
     }
   };
 
@@ -379,7 +381,7 @@ const SchoolProfile = ({ school_id, userRole }) => {
       </div>
 
       <div className="mt-12">
-        <SchoolFloodDashboard schoolId={school_id} />
+        <SchoolFloodDashboard key={dashboardRefreshKey} schoolId={school_id} userRole={userRole} />
       </div>
     </div>
   );

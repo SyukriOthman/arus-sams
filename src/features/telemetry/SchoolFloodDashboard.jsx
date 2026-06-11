@@ -6,13 +6,16 @@ import {
   ExclamationTriangleIcon,
   ShieldExclamationIcon,
   ExclamationCircleIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import Card from "../../components/ui/Card";
 import Badge from "../../components/ui/Badge";
+import Button from "../../components/ui/Button";
 
-export default function SchoolFloodDashboard({ schoolId }) {
+export default function SchoolFloodDashboard({ schoolId, userRole }) {
   const [telemetry, setTelemetry] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const fetchDashboardData = useCallback(async () => {
     setLoading(true);
@@ -81,6 +84,44 @@ export default function SchoolFloodDashboard({ schoolId }) {
     }
   }, [schoolId, fetchDashboardData]);
 
+  const handleForceSync = async () => {
+    setIsSyncing(true);
+    try {
+      // 1. Flip the switch to tell Python to start
+      await supabase
+        .from('schools')
+        .update({ sync_requested: true })
+        .eq('school_id', schoolId);
+
+      // 2. Smart Polling: Check every 2 seconds if Python finished
+      let isPythonDone = false;
+      let attempts = 0;
+      
+      while (!isPythonDone && attempts < 10) { // Max 20 seconds wait
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        const { data } = await supabase
+          .from('schools')
+          .select('sync_requested')
+          .eq('school_id', schoolId)
+          .single();
+          
+        if (data && data.sync_requested === false) {
+          isPythonDone = true; // Python flipped it back!
+        }
+        attempts++;
+      }
+
+      // 3. Python is done! Fetch the fresh data
+      await fetchDashboardData();
+      
+    } catch (error) {
+      console.error("Manual sync failed:", error);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   // Helper function to color-code the UI based on the database status using Heroicons
   const getStatusStyles = (status) => {
     switch (status) {
@@ -127,7 +168,7 @@ export default function SchoolFloodDashboard({ schoolId }) {
     }
   };
 
-  if (loading) {
+  if (loading && !isSyncing) {
     return (
       <div className="p-4 text-center text-slate-500 animate-pulse font-medium">
         Loading live iHYDRO telemetry...
@@ -150,10 +191,25 @@ export default function SchoolFloodDashboard({ schoolId }) {
 
   return (
     <div className="mt-8">
-      <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
-        <SignalIcon className="w-6 h-6 text-teal-600" />
-        Early Warning Telemetry
-      </h3>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <SignalIcon className="w-6 h-6 text-teal-600" />
+          Early Warning Telemetry
+        </h3>
+
+        {userRole === "headmaster" && (
+          <Button
+            variant="secondary"
+            onClick={handleForceSync}
+            disabled={isSyncing || loading}
+          >
+            <ArrowPathIcon
+              className={`w-4 h-4 ${isSyncing ? "animate-spin" : ""}`}
+            />
+            {isSyncing ? "Syncing..." : "Force Sync"}
+          </Button>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {telemetry.map((node) => {
@@ -166,9 +222,7 @@ export default function SchoolFloodDashboard({ schoolId }) {
             >
               {/* Priority Badge */}
               <div className="absolute -top-3 -left-3 shadow-md rounded">
-                <Badge variant="brand">
-                  #{node.priority}
-                </Badge>
+                <Badge variant="brand">#{node.priority}</Badge>
               </div>
 
               <div className="flex justify-between items-start mb-4 mt-2">

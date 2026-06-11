@@ -3,13 +3,16 @@ import time
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from supabase import create_client, Client
+from supabase import create_client, Client, ClientOptions
 
 # --- 1. SUPABASE CONNECTION SETUP ---
 load_dotenv()
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+# Increased timeout to 30 seconds to prevent Supabase cold-start errors
+options = ClientOptions(postgrest_client_timeout=30.0)
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY, options=options)
 
 # --- 2. CONFIGURATION ---
 BASE_URL = "https://ihydro.sarawak.gov.my/iHydro/en/datatable/waterlevel/latest-waterlevel.jsp?page="
@@ -20,8 +23,6 @@ HEADERS = {
 def get_total_pages():
     """Silently visits Page 1 to calculate exactly how many pages exist today."""
     try:
-        print("🔍 Calculating total iHYDRO pages...")
-        # Increased timeout to 45 seconds
         response = requests.get(f"{BASE_URL}1", headers=HEADERS, timeout=45)
         soup = BeautifulSoup(response.text, "html.parser")
         
@@ -31,26 +32,21 @@ def get_total_pages():
                 page_numbers.append(int(link.text.strip()))
         
         max_pages = max(page_numbers) if page_numbers else 1
-        print(f"📄 Found {max_pages} total pages to scrape.")
-        
-        # Polite delay before the main scraping starts
-        time.sleep(2) 
+        time.sleep(1) 
         return max_pages
     except Exception as e:
         print(f"❌ Error finding pages: {e}")
         return 1
 
-def scrape_all_live_data(max_pages):
-    """Scrapes all pages and returns a dictionary."""
+def scrape_live_data(max_pages, target_station_names=None):
+    """Scrapes pages and STOPS EARLY if all target stations are found."""
     live_data_dict = {}
     
     for page in range(1, max_pages + 1):
         print(f"📡 Scraping Page {page}/{max_pages}...")
         try:
-            # Increased timeout to 45 seconds
             response = requests.get(f"{BASE_URL}{page}", headers=HEADERS, timeout=45)
             soup = BeautifulSoup(response.text, "html.parser")
-            
             rows = soup.find_all("tr")
             
             for row in rows:
@@ -59,17 +55,27 @@ def scrape_all_live_data(max_pages):
                     station_link = row.find('a')
                     if station_link and 'station=' in station_link.get('href', ''):
                         station_name = station_link.text.strip()
+                        
+                        # OPTIMIZATION 1: Ignore stations we don't care about
+                        if target_station_names and station_name not in target_station_names:
+                            continue
+                            
                         try:
                             water_level = float(cells[5].text.strip())
                             live_data_dict[station_name] = water_level
                         except ValueError:
                             continue 
             
-            # Polite delay so we don't overwhelm the iHYDRO server
-            time.sleep(2)
+            # OPTIMIZATION 2: The "Early Break"
+            # If we found exactly the amount of stations we requested, stop scraping!
+            if target_station_names and len(live_data_dict) == len(target_station_names):
+                print(f"🎯 Found all {len(target_station_names)} requested stations! Stopping scraper early to save resources.")
+                break
+                
+            time.sleep(1)
 
         except requests.exceptions.ReadTimeout:
-            print(f"⚠️ Page {page} timed out! The government server is slow. Skipping page...")
+            print(f"⚠️ Page {page} timed out! Skipping...")
             continue
         except Exception as e:
             print(f"❌ Unexpected error on Page {page}: {e}")
@@ -88,31 +94,34 @@ def determine_status(water_level, normal, alert, warning, danger):
     else:
         return 'normal'
 
-def run_telemetry_pipeline():
-    print("🌊 Starting Arus-SAMS Telemetry Pipeline...")
+def run_telemetry_pipeline(target_school_id=None):
+    """Runs the pipeline. If target_school_id is provided, it only syncs that school's stations."""
+    mode_text = f"for School ID: {target_school_id}" if target_school_id else "(ALL SCHOOLS MASTER SYNC)"
+    print(f"🌊 Starting Arus-SAMS Telemetry Pipeline {mode_text}...")
 
-    # 1. Map the live website
-    max_pages = get_total_pages()
-    live_ihydro_data = scrape_all_live_data(max_pages)
-    
-    if not live_ihydro_data:
-        print("❌ Scraper failed to gather data. Exiting.")
-        return
-
-    # 2. Get active stations AND their thresholds from Supabase
-    response = supabase.table("school_station").select("station_id").execute()
+    # 1. Figure out which stations we actually need
+    query = supabase.table("school_station").select("station_id")
+    if target_school_id:
+        query = query.eq("school_id", target_school_id)
+        
+    response = query.execute()
     active_station_ids = list({row['station_id'] for row in response.data})
-    
-    print(f"🎯 Found {len(active_station_ids)} active stations mapped to schools.")
 
     if not active_station_ids:
-        print("No stations currently tracked. Exiting.")
+        print("❌ No stations mapped for this request. Exiting.")
         return
 
     # Fetch the details for only the stations we care about
     station_lookup = supabase.table("stations").select(
         "station_id, station_name, normal_level, alert_level, warning_level, danger_level"
     ).in_("station_id", active_station_ids).execute()
+    
+    target_station_names = [s['station_name'] for s in station_lookup.data]
+    print(f"🎯 Targeting {len(target_station_names)} specific station(s)...")
+
+    # 2. Map the live website (Passing in our specific targets for the Early Break)
+    max_pages = get_total_pages()
+    live_ihydro_data = scrape_live_data(max_pages, target_station_names)
 
     # 3. Cross-reference, Calculate, and Insert
     inserted_count = 0
@@ -121,8 +130,6 @@ def run_telemetry_pipeline():
         
         if station_name in live_ihydro_data:
             current_water_level = live_ihydro_data[station_name]
-            
-            # Dynamically calculate if it is Safe, Warning, or Danger
             current_status = determine_status(
                 current_water_level,
                 station['normal_level'],
@@ -131,25 +138,57 @@ def run_telemetry_pipeline():
                 station['danger_level']
             )
             
-            # Insert the fresh data
             supabase.table("water_data").insert({
                 "station_id": station['station_id'],
                 "water_level": current_water_level,
                 "status": current_status
             }).execute()
             
-            # The Supabase Database Trigger will automatically catch 'warning'/'danger' and update 'is_critical'
-            
             print(f"✅ Logged {station_name}: {current_status.upper()} at {current_water_level}m")
             inserted_count += 1
         else:
-            print(f"⚠️ Warning: {station_name} was active in DB but not found on the iHYDRO website today.")
+            print(f"⚠️ Warning: {station_name} was offline or not found on iHYDRO today.")
 
-    # 4. Run Database Housekeeping (Clear data older than 7 days)
-    print("🧹 Running automated 7-day housekeeping...")
-    supabase.rpc("delete_old_water_data", {}).execute()
+    # 4. Run Database Housekeeping ONLY if this is a master sync
+    if not target_school_id:
+        print("🧹 Running automated 7-day housekeeping...")
+        supabase.rpc("delete_old_water_data", {}).execute()
     
     print(f"🚀 Pipeline Complete! Successfully updated {inserted_count} stations.")
 
+# --- 3. DAEMON LISTENER (REAL-TIME BRIDGE) ---
+def listen_for_sync_requests():
+    """Continuously polls Supabase to see if a Headmaster clicked 'Force Sync'."""
+    print("\n🎧 Telemetry Worker is running and listening for targeted Headmaster sync requests...")
+    
+    while True:
+        try:
+            # Check if ANY school has requested a sync
+            response = supabase.table("schools").select("school_id").eq("sync_requested", True).execute()
+            
+            if response.data:
+                # Loop through the schools that pressed the button
+                for school in response.data:
+                    school_id = school['school_id']
+                    print(f"\n⚡ FORCE SYNC TRIGGERED for School ID: {school_id}")
+                    
+                    # Run the pipeline passing ONLY their school ID
+                    run_telemetry_pipeline(target_school_id=school_id)
+                    
+                    # Reset the flag back to false for this specific school
+                    supabase.table("schools").update({"sync_requested": False}).eq("school_id", school_id).execute()
+                    
+                print("\n✅ Targeted sync complete. Flags reset. Returning to listening mode...\n")
+                
+            else:
+                time.sleep(3) # Check every 3 seconds
+                
+        except Exception as e:
+            print(f"⚠️ Listener encountered an error: {e}")
+            time.sleep(10)
+
 if __name__ == "__main__":
-    run_telemetry_pipeline()
+    # 1. Run the standard pipeline once on startup for ALL schools
+    run_telemetry_pipeline(target_school_id=None)
+    # 2. Enter listening mode forever for TARGETED requests
+    listen_for_sync_requests()
