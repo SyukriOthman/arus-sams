@@ -25,10 +25,8 @@ const UserProfile = ({ session, onSessionUpdate }) => {
 
   // Password change
   const [showPasswordSection, setShowPasswordSection] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showCurrent, setShowCurrent] = useState(false);
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
@@ -43,7 +41,7 @@ const UserProfile = ({ session, onSessionUpdate }) => {
     setLoading(true);
     const { data: staffData, error: staffError } = await supabase
       .from("staff")
-      .select("*")
+      .select("id, full_name, role, email, phone_no, ic_number, school_id, profile_pic")
       .eq("id", session.id)
       .single();
 
@@ -122,31 +120,13 @@ const UserProfile = ({ session, onSessionUpdate }) => {
 
     setPwLoading(true);
 
-    // Verify current password
-    const { data, error } = await supabase
-      .from("staff").select("stored_password").eq("id", profile.id).single();
-
-    if (error || !data) {
-      setPwError("Could not verify your current password. Try again.");
-      setPwLoading(false);
-      return;
-    }
-
-    if (data.stored_password !== currentPassword) {
-      setPwError("Current password is incorrect.");
-      setPwLoading(false);
-      return;
-    }
-
-    // Save new password
-    const { error: updateError } = await supabase
-      .from("staff").update({ stored_password: newPassword }).eq("id", profile.id);
+    // Save new password using Supabase Auth
+    const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
 
     if (updateError) {
       setPwError("Failed to update password: " + updateError.message);
     } else {
       setPwSuccess(true);
-      setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
       setTimeout(() => {
@@ -159,7 +139,6 @@ const UserProfile = ({ session, onSessionUpdate }) => {
 
   const cancelPasswordChange = () => {
     setShowPasswordSection(false);
-    setCurrentPassword("");
     setNewPassword("");
     setConfirmPassword("");
     setPwError(null);
@@ -305,28 +284,6 @@ const UserProfile = ({ session, onSessionUpdate }) => {
                   </div>
                 )}
 
-                {/* Current password */}
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1.5">Current Password</label>
-                  <div className="relative">
-                    <input
-                      type={showCurrent ? "text" : "password"}
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      required
-                      placeholder="Enter your current password"
-                      className="w-full px-4 py-2.5 pr-12 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-                    />
-                    <button type="button" onClick={() => setShowCurrent(!showCurrent)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs font-bold select-none">
-                      {showCurrent ? "HIDE" : "SHOW"}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Divider */}
-                <div className="border-t border-slate-100 pt-1" />
-
                 {/* New password */}
                 <div>
                   <label className="block text-sm font-bold text-slate-700 mb-1.5">New Password</label>
@@ -394,7 +351,7 @@ const UserProfile = ({ session, onSessionUpdate }) => {
                   </button>
                   <button
                     type="submit"
-                    disabled={pwLoading || !currentPassword || !passwordsMatch}
+                    disabled={pwLoading || !passwordsMatch}
                     className="w-2/3 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm font-bold shadow transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {pwLoading ? "Updating..." : "🔒 Update Password"}
