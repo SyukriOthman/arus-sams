@@ -96,10 +96,16 @@ export default function AddSchoolModal({ onClose, refreshData }) {
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <Card className="w-full max-w-4xl relative fade-in flex flex-col max-h-[90vh] shadow-2xl overflow-hidden">
-        {/* FIXED HEADER */}
-        <div className="p-8 pb-4 border-b border-slate-100 flex justify-between items-start bg-white z-20">
-          <div>
+      <Card className="w-full max-w-4xl relative fade-in max-h-[90vh] overflow-y-auto shadow-2xl">
+        <button 
+          onClick={onClose}
+          className="absolute right-4 top-4 p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors z-30"
+        >
+          <XMarkIcon className="w-6 h-6" />
+        </button>
+
+        <div className="p-8">
+          <div className="sticky top-0 bg-white z-20 pb-4 border-b border-slate-100 mb-6 -mt-2">
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-teal-50 rounded-lg border border-teal-100">
                 <BuildingLibraryIcon className="w-8 h-8 text-teal-600" />
@@ -108,17 +114,8 @@ export default function AddSchoolModal({ onClose, refreshData }) {
             </div>
             <p className="text-sm text-slate-500">Register a new institutional facility into the system database.</p>
           </div>
-          <button 
-            onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <XMarkIcon className="w-6 h-6" />
-          </button>
-        </div>
 
-        {/* SCROLLABLE CONTENT */}
-        <div className="flex-1 overflow-y-auto p-8 pt-6">
-          <form id="add-school-form" onSubmit={handleCreateSchool} className="space-y-8">
+          <form onSubmit={handleCreateSchool} className="space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="md:col-span-2">
                 <Input
@@ -213,35 +210,36 @@ export default function AddSchoolModal({ onClose, refreshData }) {
                 />
               </div>
             </div>
-          </form>
-        </div>
 
-        {/* FIXED FOOTER */}
-        <div className="p-8 pt-4 border-t border-slate-100 flex justify-end gap-3 bg-white z-20">
-          <Button
-            variant="secondary"
-            onClick={onClose}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="primary"
-            form="add-school-form"
-            type="submit"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <ArrowPathIcon className="w-5 h-5 animate-spin" />
-                Registering...
-              </>
-            ) : (
-              <>
-                <CheckCircleIcon className="w-5 h-5" />
-                Register School
-              </>
-            )}
-          </Button>
+            <div className="sticky bottom-0 bg-white z-20 pt-4 pb-2 border-t border-slate-100 mt-6 -mb-2">
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="secondary"
+                  type="button"
+                  onClick={onClose}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                      Registering...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircleIcon className="w-5 h-5" />
+                      Register School
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </form>
         </div>
       </Card>
     </div>

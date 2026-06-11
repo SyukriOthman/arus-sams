@@ -145,7 +145,21 @@ const SchoolProfile = ({ school_id, userRole }) => {
     return <div className="p-8 text-slate-500">Loading profile data...</div>;
 
   return (
-    <div className="max-w-5xl mx-auto pb-28 fade-in">
+    <div className="fade-in space-y-6 relative max-w-7xl mx-auto p-4 md:p-8 pb-28">
+      {/* Header bar */}
+      <Card className="p-4 md:p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl md:text-2xl font-bold text-slate-800">
+              School Profile
+            </h2>
+            <p className="text-slate-500 text-sm mt-1">
+              Manage institutional identity, geographic coordinates, and contact information.
+            </p>
+          </div>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
         {/* Left Column: School Identity */}
         <div className="lg:col-span-1">
