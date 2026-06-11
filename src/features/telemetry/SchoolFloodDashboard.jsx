@@ -1,17 +1,20 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../../supabaseClient";
+import {
+  SignalIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  ShieldExclamationIcon,
+  ExclamationCircleIcon,
+} from "@heroicons/react/24/outline";
+import Card from "../../components/ui/Card";
+import Badge from "../../components/ui/Badge";
 
 export default function SchoolFloodDashboard({ schoolId }) {
   const [telemetry, setTelemetry] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (schoolId) {
-      fetchDashboardData();
-    }
-  }, [schoolId]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     setLoading(true);
 
     try {
@@ -39,7 +42,7 @@ export default function SchoolFloodDashboard({ schoolId }) {
           const station = mapping.stations;
 
           // Use the standard client here as well
-          const { data: waterData, error: waterError } = await supabase
+          const { data: waterData } = await supabase
             .from("water_data")
             .select("water_level, status, recorded_at")
             .eq("station_id", station.station_id)
@@ -70,52 +73,63 @@ export default function SchoolFloodDashboard({ schoolId }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [schoolId]);
 
-  // Helper function to color-code the UI based on the database status
+  useEffect(() => {
+    if (schoolId) {
+      fetchDashboardData();
+    }
+  }, [schoolId, fetchDashboardData]);
+
+  // Helper function to color-code the UI based on the database status using Heroicons
   const getStatusStyles = (status) => {
     switch (status) {
       case "normal":
         return {
-          bg: "bg-emerald-100",
+          bg: "bg-emerald-50",
           text: "text-emerald-800",
           border: "border-emerald-200",
-          icon: "🟢",
+          variant: "active",
+          icon: CheckCircleIcon,
         };
       case "alert":
         return {
-          bg: "bg-yellow-100",
+          bg: "bg-yellow-50",
           text: "text-yellow-800",
           border: "border-yellow-200",
-          icon: "🟡",
+          variant: "warning",
+          icon: ExclamationTriangleIcon,
         };
       case "warning":
         return {
-          bg: "bg-orange-100",
+          bg: "bg-orange-50",
           text: "text-orange-800",
           border: "border-orange-200",
-          icon: "🟠",
+          variant: "warning",
+          icon: ExclamationTriangleIcon,
         };
       case "danger":
         return {
-          bg: "bg-red-100",
+          bg: "bg-red-50",
           text: "text-red-800",
           border: "border-red-300",
-          icon: "🚨",
+          variant: "danger",
+          icon: ShieldExclamationIcon,
         };
       default:
         return {
-          bg: "bg-slate-100",
+          bg: "bg-slate-50",
           text: "text-slate-600",
           border: "border-slate-200",
-          icon: "⚪",
+          variant: "neutral",
+          icon: ExclamationCircleIcon,
         };
     }
   };
 
   if (loading) {
     return (
-      <div className="p-4 text-center text-slate-500 animate-pulse">
+      <div className="p-4 text-center text-slate-500 animate-pulse font-medium">
         Loading live iHYDRO telemetry...
       </div>
     );
@@ -123,71 +137,74 @@ export default function SchoolFloodDashboard({ schoolId }) {
 
   if (telemetry.length === 0) {
     return (
-      <div className="p-6 bg-slate-50 border border-slate-200 rounded-xl text-center">
-        <p className="text-slate-500 font-medium">
+      <Card className="p-8 text-center bg-slate-50 border-dashed">
+        <p className="text-slate-600 font-bold mb-1">
           No telemetry stations are currently mapped to this school.
         </p>
-        <p className="text-sm text-slate-400 mt-1">
+        <p className="text-sm text-slate-500">
           Update the school's coordinates to assign stations.
         </p>
-      </div>
+      </Card>
     );
   }
 
   return (
     <div className="mt-8">
-      <h3 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-        🌊 Early Warning Telemetry
+      <h3 className="text-xl font-bold text-slate-800 mb-6 flex items-center gap-2">
+        <SignalIcon className="w-6 h-6 text-teal-600" />
+        Early Warning Telemetry
       </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {telemetry.map((node) => {
           const style = getStatusStyles(node.status);
 
           return (
-            <div
+            <Card
               key={node.priority}
-              className={`relative p-5 rounded-2xl border ${style.bg} ${style.border} shadow-sm transition-all hover:shadow-md`}
+              className={`relative p-6 !overflow-visible border-t-4 ${style.bg} ${style.border} transition-all hover:shadow-md`}
             >
               {/* Priority Badge */}
-              <div className="absolute -top-3 -left-3 bg-slate-800 text-white text-xs font-bold w-7 h-7 flex items-center justify-center rounded-full shadow-md">
-                #{node.priority}
+              <div className="absolute -top-3 -left-3 shadow-md rounded">
+                <Badge variant="brand">
+                  #{node.priority}
+                </Badge>
               </div>
 
-              <div className="flex justify-between items-start mb-2 mt-1">
-                <h4 className="font-bold text-slate-800 truncate pr-2">
+              <div className="flex justify-between items-start mb-4 mt-2">
+                <h4 className="font-bold text-slate-900 text-lg leading-tight pr-4">
                   {node.stationName}
                 </h4>
-                <span className="text-xl" title={node.status.toUpperCase()}>
-                  {style.icon}
-                </span>
+                <style.icon className={`w-6 h-6 ${style.text}`} />
               </div>
 
-              <div className="mt-4 flex items-end justify-between">
+              <div className="mt-6 flex items-end justify-between">
                 <div>
-                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">
                     Current Level
                   </p>
-                  <p className={`text-3xl font-black ${style.text}`}>
+                  <p className={`text-4xl font-black ${style.text}`}>
                     {node.currentLevel}{" "}
-                    <span className="text-lg font-bold text-opacity-70">m</span>
+                    <span className="text-lg font-bold opacity-60">m</span>
                   </p>
                 </div>
 
                 <div className="text-right">
-                  <p className="text-xs font-medium text-slate-500">
+                  <p className="text-xs font-bold text-slate-400 uppercase">
                     Danger: {node.dangerLevel}m
                   </p>
                 </div>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-black border-opacity-5 flex justify-between items-center text-xs font-medium text-slate-600">
-                <span className="uppercase tracking-wider font-bold text-[10px] opacity-70">
-                  Status: {node.status}
+              <div className="mt-6 pt-4 border-t border-black/5 flex justify-between items-center">
+                <Badge variant={style.variant} icon={style.icon}>
+                  {node.status}
+                </Badge>
+                <span className="text-[10px] font-bold text-slate-500 uppercase">
+                  Updated: {node.lastUpdated}
                 </span>
-                <span>Updated: {node.lastUpdated}</span>
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>

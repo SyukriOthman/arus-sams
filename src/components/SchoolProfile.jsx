@@ -1,6 +1,21 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "../supabaseClient";
 import SchoolFloodDashboard from "../features/telemetry/SchoolFloodDashboard";
+import {
+  BuildingOfficeIcon,
+  PencilSquareIcon,
+  CheckIcon,
+  XMarkIcon,
+  MapPinIcon,
+  PhoneIcon,
+  GlobeAltIcon,
+} from "@heroicons/react/24/outline";
+import Card from "./ui/Card";
+import Button from "./ui/Button";
+import Badge from "./ui/Badge";
+import Input from "./ui/Input";
+import Select from "./ui/Select";
+import Textarea from "./ui/Textarea";
 
 const MALAYSIA_STATES = [
   { state: "Johor", ptj: "JPNJ" },
@@ -40,12 +55,7 @@ const SchoolProfile = ({ school_id, userRole }) => {
 
   const canEdit = userRole === "superadmin" || userRole === "headmaster";
 
-  useEffect(() => {
-    if (school_id) fetchSchoolData();
-    else setLoading(false);
-  }, [school_id]);
-
-  const fetchSchoolData = async () => {
+  const fetchSchoolData = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from("schools")
@@ -70,7 +80,15 @@ const SchoolProfile = ({ school_id, userRole }) => {
       });
     }
     setLoading(false);
-  };
+  }, [school_id]);
+
+  useEffect(() => {
+    if (school_id) {
+      fetchSchoolData();
+    } else {
+      setLoading(false);
+    }
+  }, [school_id, fetchSchoolData]);
 
   const handleStateChange = (e) => {
     const selected = e.target.value;
@@ -110,7 +128,6 @@ const SchoolProfile = ({ school_id, userRole }) => {
       alert("Update Failed: " + error.message);
       console.error("Update Error:", error);
     } else {
-      // 🚀 CRITICAL: Recalculate nearest flood stations instantly if coordinates change
       if (latValue && lonValue) {
         await supabase.rpc("assign_nearest_stations", {
           p_school_id: school_id,
@@ -126,261 +143,244 @@ const SchoolProfile = ({ school_id, userRole }) => {
     return <div className="p-8 text-slate-500">Loading profile data...</div>;
 
   return (
-    <div className="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow border border-slate-200 fade-in">
-      {/* HEADER SECTION */}
-      <div className="flex justify-between items-center mb-6 border-b border-slate-100 pb-4">
-        <h2 className="text-2xl font-bold text-slate-800">
-          {isEditing ? "Edit School Information" : "School Information"}
-        </h2>
-
-        {canEdit && !isEditing && (
-          <button
-            onClick={() => setIsEditing(true)}
-            className="bg-slate-100 text-slate-600 hover:bg-teal-50 hover:text-teal-700 px-4 py-2 rounded-lg font-bold text-sm transition-colors border border-slate-200"
-          >
-            ✏️ Edit Details
-          </button>
-        )}
-      </div>
-
-      {/* VIEW ONLY MODE */}
-      {!isEditing ? (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 col-span-1">
-              <p className="text-xs font-bold text-slate-400 uppercase mb-1 tracking-wider">
-                School Code
-              </p>
-              <p className="text-lg font-bold text-teal-700">
-                {school.school_code || "N/A"}
-              </p>
+    <div className="max-w-5xl mx-auto pb-28 fade-in">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
+        {/* Left Column: School Identity */}
+        <div className="lg:col-span-1">
+          <Card className="p-8 text-center h-full flex flex-col justify-center items-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-teal-50 mb-6 shrink-0">
+              <BuildingOfficeIcon className="w-10 h-10 text-teal-600" />
             </div>
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 col-span-2">
-              <p className="text-xs font-bold text-slate-400 uppercase mb-1 tracking-wider">
-                School Name
-              </p>
-              <p className="text-lg font-bold text-slate-800">
-                {school.school_name || "Not specified"}
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-            <p className="text-xs font-bold text-slate-400 uppercase mb-1 tracking-wider">
-              Official Address
+            <h1 className="text-2xl font-bold text-slate-900 mb-2">
+              {school.school_name || "School Name"}
+            </h1>
+            <p className="text-slate-500 font-medium mb-6">
+              {school.school_code || "Code Pending"}
             </p>
-            <div className="text-slate-800 font-medium">
-              {school.address_line ? (
-                <>
-                  <p>{school.address_line}</p>
-                  <p>
-                    {school.postcode} {school.city}, {school.state}
-                  </p>
-                  {school.ptj_code && (
-                    <p className="text-teal-600 text-xs mt-2 font-bold tracking-wide">
-                      PTJ CODE: {school.ptj_code}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <p>Not specified</p>
+            <div className="flex flex-wrap justify-center gap-2 mt-auto">
+              <Badge variant="brand">{school.state || "No State"}</Badge>
+              {school.ptj_code && (
+                <Badge variant="neutral">PTJ: {school.ptj_code}</Badge>
               )}
             </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-              <p className="text-xs font-bold text-slate-400 uppercase mb-1 tracking-wider">
-                Contact Number
-              </p>
-              <p className="text-slate-800 font-medium">
-                {school.contact_no || "Not specified"}
-              </p>
-            </div>
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-              <p className="text-xs font-bold text-slate-400 uppercase mb-1 tracking-wider">
-                Latitude
-              </p>
-              <p className="text-slate-800 font-mono text-sm">
-                {school.latitude || "Not specified"}
-              </p>
-            </div>
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
-              <p className="text-xs font-bold text-slate-400 uppercase mb-1 tracking-wider">
-                Longitude
-              </p>
-              <p className="text-slate-800 font-mono text-sm">
-                {school.longitude || "Not specified"}
-              </p>
-            </div>
-          </div>
-
-          <div className="pt-6 border-t border-slate-100 mt-6">
-            <SchoolFloodDashboard schoolId={school_id} />
-          </div>
+          </Card>
         </div>
-      ) : (
-        /* EDIT MODE FORM */
-        <form
-          onSubmit={handleUpdate}
-          className="space-y-5 bg-slate-50 p-6 rounded-lg border border-slate-200"
-        >
-          <div className="grid grid-cols-3 gap-4">
-            <div className="col-span-1">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                School Code
-              </label>
-              <input
-                type="text"
-                required
-                value={school.school_code}
-                onChange={(e) =>
-                  setSchool({ ...school, school_code: e.target.value })
-                }
-                className="border border-slate-300 p-2.5 w-full rounded focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                School Name
-              </label>
-              <input
-                type="text"
-                required
-                value={school.school_name}
-                onChange={(e) =>
-                  setSchool({ ...school, school_name: e.target.value })
-                }
-                className="border border-slate-300 p-2.5 w-full rounded focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              />
-            </div>
-          </div>
 
-          <div className="pt-2 border-t border-slate-200">
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-              Address Line 1
-            </label>
-            <input
-              type="text"
-              required
-              value={school.address_line}
-              onChange={(e) =>
-                setSchool({ ...school, address_line: e.target.value })
-              }
-              className="border border-slate-300 p-2.5 w-full rounded focus:ring-2 focus:ring-teal-500 focus:outline-none"
-            />
-          </div>
+        {/* Right Column: Information / Edit Form */}
+        <div className="lg:col-span-2">
+          <Card className="h-full flex flex-col">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center shrink-0">
+              <h2 className="text-lg font-bold text-slate-800">
+                {isEditing ? "Edit School Details" : "School Information"}
+              </h2>
+              {canEdit && !isEditing && (
+                <Button variant="secondary" onClick={() => setIsEditing(true)}>
+                  <PencilSquareIcon className="w-4 h-4 mr-2" />
+                  Edit Details
+                </Button>
+              )}
+            </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                Postcode
-              </label>
-              <input
-                type="text"
-                required
-                value={school.postcode}
-                onChange={(e) =>
-                  setSchool({ ...school, postcode: e.target.value })
-                }
-                className="border border-slate-300 p-2.5 w-full rounded focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                City
-              </label>
-              <input
-                type="text"
-                required
-                value={school.city}
-                onChange={(e) => setSchool({ ...school, city: e.target.value })}
-                className="border border-slate-300 p-2.5 w-full rounded focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                State
-              </label>
-              <select
-                required
-                value={school.state}
-                onChange={handleStateChange}
-                className="border border-slate-300 p-2.5 w-full rounded focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white"
-              >
-                <option value="" disabled>
-                  — Select State —
-                </option>
-                {MALAYSIA_STATES.map((s) => (
-                  <option key={s.state} value={s.state}>
-                    {s.state}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+            <div className="p-6 flex-grow">
+              {!isEditing ? (
+                <div className="space-y-8">
+                  <div className="flex gap-4">
+                    <div className="mt-1">
+                      <div className="p-2 bg-slate-50 rounded-lg">
+                        <MapPinIcon className="w-5 h-5 text-slate-400" />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                        Official Address
+                      </p>
+                      <div className="text-slate-800">
+                        {school.address_line ? (
+                          <>
+                            <p className="font-medium text-lg">
+                              {school.address_line}
+                            </p>
+                            <p className="text-slate-600">
+                              {school.postcode} {school.city}, {school.state}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="italic text-slate-400">Not specified</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                Contact Number
-              </label>
-              <input
-                type="text"
-                value={school.contact_no}
-                onChange={(e) =>
-                  setSchool({ ...school, contact_no: e.target.value })
-                }
-                className="border border-slate-300 p-2.5 w-full rounded focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                Latitude
-              </label>
-              <input
-                type="number"
-                step="any"
-                value={school.latitude}
-                onChange={(e) =>
-                  setSchool({ ...school, latitude: e.target.value })
-                }
-                className="border border-slate-300 p-2.5 w-full rounded focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">
-                Longitude
-              </label>
-              <input
-                type="number"
-                step="any"
-                value={school.longitude}
-                onChange={(e) =>
-                  setSchool({ ...school, longitude: e.target.value })
-                }
-                className="border border-slate-300 p-2.5 w-full rounded focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              />
-            </div>
-          </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="flex gap-4">
+                      <div className="mt-1">
+                        <div className="p-2 bg-slate-50 rounded-lg">
+                          <GlobeAltIcon className="w-5 h-5 text-slate-400" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                          Geographic Coordinates
+                        </p>
+                        <div className="text-slate-800 font-mono text-sm">
+                          {school.latitude && school.longitude ? (
+                            <p>
+                              {school.latitude}, {school.longitude}
+                            </p>
+                          ) : (
+                            <p className="italic text-slate-400">
+                              Not specified
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
 
-          <div className="flex space-x-3 pt-4 border-t border-slate-200">
-            <button
-              type="button"
-              onClick={() => setIsEditing(false)}
-              className="w-1/3 bg-white border border-slate-300 text-slate-600 font-bold py-2.5 rounded-lg hover:bg-slate-50 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="w-2/3 bg-teal-600 text-white font-bold py-2.5 rounded-lg hover:bg-teal-700 transition-colors shadow-md"
-            >
-              💾 Save Changes
-            </button>
-          </div>
-        </form>
-      )}
+                    <div className="flex gap-4">
+                      <div className="mt-1">
+                        <div className="p-2 bg-slate-50 rounded-lg">
+                          <PhoneIcon className="w-5 h-5 text-slate-400" />
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">
+                          Contact Number
+                        </p>
+                        <p className="text-slate-800 font-medium text-lg">
+                          {school.contact_no || (
+                            <span className="italic text-slate-400 font-normal">
+                              Not specified
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <form onSubmit={handleUpdate} className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Input
+                      label="School Code"
+                      required
+                      value={school.school_code}
+                      onChange={(e) =>
+                        setSchool({ ...school, school_code: e.target.value })
+                      }
+                    />
+                    <div className="md:col-span-2">
+                      <Input
+                        label="School Name"
+                        required
+                        value={school.school_name}
+                        onChange={(e) =>
+                          setSchool({ ...school, school_name: e.target.value })
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <Textarea
+                    label="Address Line 1"
+                    required
+                    rows={2}
+                    value={school.address_line}
+                    onChange={(e) =>
+                      setSchool({ ...school, address_line: e.target.value })
+                    }
+                  />
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Input
+                      label="Postcode"
+                      required
+                      value={school.postcode}
+                      onChange={(e) =>
+                        setSchool({ ...school, postcode: e.target.value })
+                      }
+                    />
+                    <Input
+                      label="City"
+                      required
+                      value={school.city}
+                      onChange={(e) =>
+                        setSchool({ ...school, city: e.target.value })
+                      }
+                    />
+                    <Select
+                      label="State"
+                      required
+                      value={school.state}
+                      onChange={handleStateChange}
+                    >
+                      <option value="" disabled>
+                        Select State
+                      </option>
+                      {MALAYSIA_STATES.map((s) => (
+                        <option key={s.state} value={s.state}>
+                          {s.state}
+                        </option>
+                      ))}
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Input
+                      label="Contact Number"
+                      value={school.contact_no}
+                      onChange={(e) =>
+                        setSchool({ ...school, contact_no: e.target.value })
+                      }
+                    />
+                    <Input
+                      label="Latitude"
+                      type="number"
+                      step="any"
+                      value={school.latitude}
+                      onChange={(e) =>
+                        setSchool({ ...school, latitude: e.target.value })
+                      }
+                    />
+                    <Input
+                      label="Longitude"
+                      type="number"
+                      step="any"
+                      value={school.longitude}
+                      onChange={(e) =>
+                        setSchool({ ...school, longitude: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4 border-t border-slate-100">
+                    <Button
+                      type="submit"
+                      variant="primary"
+                      className="flex-1"
+                    >
+                      <CheckIcon className="w-5 h-5 mr-2" />
+                      Save Changes
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      onClick={() => setIsEditing(false)}
+                      className="flex-1"
+                      type="button"
+                    >
+                      <XMarkIcon className="w-5 h-5 mr-2" />
+                      Cancel
+                    </Button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </Card>
+        </div>
+      </div>
+
+      <div className="mt-12">
+        <SchoolFloodDashboard schoolId={school_id} />
+      </div>
     </div>
   );
 };
