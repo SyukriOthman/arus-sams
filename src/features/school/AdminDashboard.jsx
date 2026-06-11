@@ -61,7 +61,7 @@ const AdminDashboard = ({ schoolId, onNavigate }) => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8 fade-in">
+    <div className="fade-in space-y-6 relative">
       {/* HEADER BANNER */}
       <Card className="p-4 md:p-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
