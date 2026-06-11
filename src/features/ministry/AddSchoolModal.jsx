@@ -1,5 +1,16 @@
 import React, { useState } from "react";
 import { supabase } from "../../supabaseClient";
+import Card from "../../components/ui/Card";
+import Input from "../../components/ui/Input";
+import Select from "../../components/ui/Select";
+import Button from "../../components/ui/Button";
+import { 
+  BuildingLibraryIcon, 
+  CheckCircleIcon, 
+  ArrowPathIcon,
+  XMarkIcon,
+  MapPinIcon
+} from "@heroicons/react/24/outline";
 
 const MALAYSIA_STATES = [
   { state: "Johor", ptj: "JPNJ" },
@@ -21,6 +32,7 @@ const MALAYSIA_STATES = [
 ];
 
 export default function AddSchoolModal({ onClose, refreshData }) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [newSchoolCode, setNewSchoolCode] = useState("");
   const [newSchoolName, setNewSchoolName] = useState("");
   const [newAddressLine, setNewAddressLine] = useState("");
@@ -41,8 +53,8 @@ export default function AddSchoolModal({ onClose, refreshData }) {
 
   const handleCreateSchool = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    // 1. Insert the school and immediately .select() to get the generated UUID
     const { data: newSchoolData, error } = await supabase
       .from("schools")
       .insert([
@@ -63,197 +75,175 @@ export default function AddSchoolModal({ onClose, refreshData }) {
 
     if (error) {
       alert("Error creating school: " + error.message);
+      setIsSubmitting(false);
     } else {
-      // 2. Automatically map the 3 nearest iHYDRO stations to this new school
       if (newSchoolData && newSchoolData.length > 0) {
         const newSchoolId = newSchoolData[0].school_id;
         await supabase.rpc("assign_nearest_stations", {
           p_school_id: newSchoolId,
         });
       }
-
+      setIsSubmitting(false);
       refreshData();
       onClose();
     }
   };
 
+  const stateOptions = MALAYSIA_STATES.map(s => ({
+    value: s.state,
+    label: s.state
+  }));
+
   return (
-    <div className="fixed inset-0 bg-slate-900 bg-opacity-60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-xl overflow-y-auto max-h-[90vh]">
-        <h3 className="text-2xl font-bold text-slate-800 mb-6">
-          Onboard New School
-        </h3>
-        <form onSubmit={handleCreateSchool} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700">
-                School Code
-              </label>
-              <input
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <Card className="w-full max-w-4xl relative fade-in flex flex-col max-h-[90vh] shadow-2xl overflow-hidden">
+        {/* FIXED HEADER */}
+        <div className="p-8 pb-4 border-b border-slate-100 flex justify-between items-start bg-white z-20">
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 bg-teal-50 rounded-lg border border-teal-100">
+                <BuildingLibraryIcon className="w-8 h-8 text-teal-600" />
+              </div>
+              <h2 className="text-2xl font-bold text-slate-800">Onboard New School</h2>
+            </div>
+            <p className="text-sm text-slate-500">Register a new institutional facility into the system database.</p>
+          </div>
+          <button 
+            onClick={onClose}
+            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
+
+        {/* SCROLLABLE CONTENT */}
+        <div className="flex-1 overflow-y-auto p-8 pt-6">
+          <form id="add-school-form" onSubmit={handleCreateSchool} className="space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-2">
+                <Input
+                  label="School Name"
+                  type="text"
+                  required
+                  value={newSchoolName}
+                  onChange={(e) => setNewSchoolName(e.target.value)}
+                  placeholder="e.g. SK Rantau Panjang"
+                />
+              </div>
+              <Input
+                label="School Code"
                 type="text"
                 required
                 value={newSchoolCode}
                 onChange={(e) => setNewSchoolCode(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 placeholder="e.g. YBA1346"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700">
-                Contact Number
-              </label>
-              <input
+              <Input
+                label="Contact Number"
                 type="text"
                 value={newContact}
                 onChange={(e) => setNewContact(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 placeholder="e.g. 082-123456"
               />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-bold text-slate-700">
-              School Name
-            </label>
-            <input
-              type="text"
-              required
-              value={newSchoolName}
-              onChange={(e) => setNewSchoolName(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              placeholder="e.g. SK Rantau Panjang"
-            />
-          </div>
-
-          <div className="pt-2 border-t border-slate-100">
-            <label className="block text-sm font-bold text-slate-700">
-              Address Line 1
-            </label>
-            <input
-              type="text"
-              required
-              value={newAddressLine}
-              onChange={(e) => setNewAddressLine(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:outline-none"
-              placeholder="e.g. 1331, Lor Stutong 13E, Tabuan Jaya Baru 1"
-            />
-          </div>
-
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-bold text-slate-700">
-                Postcode
-              </label>
-              <input
+              <div className="md:col-span-2">
+                <Input
+                  label="Address Line"
+                  type="text"
+                  required
+                  value={newAddressLine}
+                  onChange={(e) => setNewAddressLine(e.target.value)}
+                  placeholder="e.g. 1331, Lor Stutong 13E"
+                />
+              </div>
+              <Input
+                label="Postcode"
                 type="text"
                 required
                 value={newPostcode}
                 onChange={(e) => setNewPostcode(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 placeholder="93350"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700">
-                City
-              </label>
-              <input
+              <Input
+                label="City"
                 type="text"
                 required
                 value={newCity}
                 onChange={(e) => setNewCity(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:outline-none"
                 placeholder="Kuching"
               />
-            </div>
-            <div>
-              <label className="block text-sm font-bold text-slate-700">
-                State
-              </label>
-              <select
+              <Select
+                label="State"
                 required
                 value={newState}
                 onChange={handleStateChange}
-                className="mt-1 block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white"
-              >
-                <option value="" disabled>
-                  — Select State —
-                </option>
-                {MALAYSIA_STATES.map((s) => (
-                  <option key={s.state} value={s.state}>
-                    {s.state}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {newPtjCode && (
-            <div className="flex items-center gap-3 px-4 py-3 bg-teal-50 border border-teal-200 rounded-lg">
-              <span className="text-xs font-bold text-teal-600 uppercase tracking-wider">
-                PTJ Code auto-set:
-              </span>
-              <span className="font-mono font-bold text-teal-800">
-                {newPtjCode}
-              </span>
-              <span className="text-xs text-teal-500">
-                — used in asset registration numbers
-              </span>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-lg border border-slate-200 mt-4">
-            <div className="col-span-2">
-              <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-                iHYDRO Flood Telemetry Coordinates
-              </p>
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                Latitude
-              </label>
-              <input
-                type="number"
-                step="any"
-                value={newLatitude}
-                onChange={(e) => setNewLatitude(e.target.value)}
-                className="block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white"
-                placeholder="e.g. 1.5333"
+                options={[{ value: "", label: "— Select State —" }, ...stateOptions]}
               />
+              
+              <div className="flex items-center gap-3 px-4 py-3 bg-teal-50 border border-teal-100 rounded-lg h-full max-h-[64px]">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-teal-600 uppercase tracking-wider">PTJ Code Auto-Set</span>
+                  <span className="font-mono font-bold text-teal-800 text-sm">{newPtjCode || "---"}</span>
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
-                Longitude
-              </label>
-              <input
-                type="number"
-                step="any"
-                value={newLongitude}
-                onChange={(e) => setNewLongitude(e.target.value)}
-                className="block w-full px-3 py-2 border border-slate-300 rounded-md focus:ring-2 focus:ring-teal-500 focus:outline-none bg-white"
-                placeholder="e.g. 110.3833"
-              />
-            </div>
-          </div>
 
-          <div className="flex justify-end space-x-3 mt-8 pt-4 border-t border-slate-100">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 border border-slate-300 rounded-md text-sm font-bold text-slate-700 hover:bg-slate-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-teal-600 rounded-md text-sm font-bold text-white hover:bg-teal-700"
-            >
-              Register School
-            </button>
-          </div>
-        </form>
-      </div>
+            <div className="pt-6 border-t border-slate-100">
+              <div className="flex items-center gap-2 mb-4">
+                <MapPinIcon className="w-4 h-4 text-slate-400" />
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">School Coordinates</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                <Input
+                  label="Latitude"
+                  type="number"
+                  step="any"
+                  value={newLatitude}
+                  onChange={(e) => setNewLatitude(e.target.value)}
+                  placeholder="e.g. 1.5333"
+                  className="bg-white"
+                />
+                <Input
+                  label="Longitude"
+                  type="number"
+                  step="any"
+                  value={newLongitude}
+                  onChange={(e) => setNewLongitude(e.target.value)}
+                  placeholder="e.g. 110.3833"
+                  className="bg-white"
+                />
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {/* FIXED FOOTER */}
+        <div className="p-8 pt-4 border-t border-slate-100 flex justify-end gap-3 bg-white z-20">
+          <Button
+            variant="secondary"
+            onClick={onClose}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="primary"
+            form="add-school-form"
+            type="submit"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>
+                <ArrowPathIcon className="w-5 h-5 animate-spin" />
+                Registering...
+              </>
+            ) : (
+              <>
+                <CheckCircleIcon className="w-5 h-5" />
+                Register School
+              </>
+            )}
+          </Button>
+        </div>
+      </Card>
     </div>
   );
 }
