@@ -16,7 +16,8 @@ export function useArusAuth(setCurrentTab) {
     setUserSchoolId(userData.school_id);
 
     if (roleStr === "superadmin") setCurrentTab("super-dashboard");
-    else if (roleStr === "headmaster") setCurrentTab("asset-master-list");
+    else if (roleStr === "headmaster" || roleStr === "asset_teacher") setCurrentTab("asset-master-list");
+    else if (roleStr === "standard_teacher") setCurrentTab("school");
     else setCurrentTab("mobile-audit");
   };
 
