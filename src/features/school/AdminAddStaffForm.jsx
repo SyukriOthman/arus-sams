@@ -1,5 +1,14 @@
 import React, { useState } from "react";
 import { supabase } from "../../supabaseClient";
+import Card from "../../components/ui/Card";
+import Input from "../../components/ui/Input";
+import Select from "../../components/ui/Select";
+import Button from "../../components/ui/Button";
+import { 
+  UserPlusIcon, 
+  CheckCircleIcon, 
+  ArrowPathIcon 
+} from "@heroicons/react/24/outline";
 
 export default function AdminAddStaffForm({ schoolId, onSuccess }) {
   const [fullName, setFullName] = useState("");
@@ -64,52 +73,97 @@ export default function AdminAddStaffForm({ schoolId, onSuccess }) {
     }
   };
 
+  const roleOptions = [
+    { value: "standard_teacher", label: "Standard Classroom Teacher" },
+    { value: "asset_teacher", label: "Authorized Asset Field Teacher" }
+  ];
+
   return (
-    <div className="bg-white p-8 rounded-xl shadow border border-slate-200 fade-in max-w-2xl">
-      <h2 className="text-2xl font-bold text-slate-800 mb-2">Register School Staff Profile</h2>
-      <p className="text-sm text-slate-500 mb-6">Complete personnel provisioning for the institutional tenant.</p>
-      <form onSubmit={handleRegisterStaff} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Full Name</label>
-            <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="border p-2 w-full rounded focus:ring-2 focus:ring-teal-500" required />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Workspace Scope</label>
-            <select value={role} onChange={(e) => setRole(e.target.value)} className="border p-2 w-full rounded bg-slate-50 font-medium text-slate-700">
-              <option value="standard_teacher">Standard Classroom Teacher</option>
-              <option value="asset_teacher">Authorized Asset Field Teacher</option>
-            </select>
-          </div>
+    <Card className="p-8 w-full fade-in">
+      <div className="flex items-center gap-3 mb-2">
+        <div className="p-2 bg-teal-50 rounded-lg border border-teal-100">
+          <UserPlusIcon className="w-8 h-8 text-teal-600" />
         </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Official Email</label>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="border p-2 w-full rounded focus:ring-2 focus:ring-teal-500" required />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Phone Number</label>
-            <input type="tel" value={phoneNo} onChange={(e) => setPhoneNo(e.target.value)} className="border p-2 w-full rounded focus:ring-2 focus:ring-teal-500" required />
-          </div>
+        <h2 className="text-2xl font-bold text-slate-800">Register School Staff Profile</h2>
+      </div>
+      <p className="text-sm text-slate-500 mb-8">Complete personnel provisioning for the institutional tenant.</p>
+      
+      <form onSubmit={handleRegisterStaff} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Input 
+            label="Full Name" 
+            type="text" 
+            value={fullName} 
+            onChange={(e) => setFullName(e.target.value)} 
+            required 
+          />
+          <Select 
+            label="Workspace Scope" 
+            value={role} 
+            onChange={(e) => setRole(e.target.value)} 
+            options={roleOptions}
+            required
+          />
+          <Input 
+            label="Official Email" 
+            type="email" 
+            value={email} 
+            onChange={(e) => setEmail(e.target.value)} 
+            required 
+          />
+          <Input 
+            label="Phone Number" 
+            type="tel" 
+            value={phoneNo} 
+            onChange={(e) => setPhoneNo(e.target.value)} 
+            required 
+          />
+          <Input 
+            label="IC Number" 
+            type="text" 
+            value={icNumber} 
+            onChange={(e) => setIcNumber(e.target.value)} 
+            required 
+          />
+          <Input 
+            label="Profile Picture" 
+            type="file" 
+            accept="image/jpeg, image/png" 
+            onChange={(e) => setAvatarFile(e.target.files[0])} 
+          />
         </div>
-        <div className="grid grid-cols-2 gap-4 items-start">
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">IC Number</label>
-            <input type="text" value={icNumber} onChange={(e) => setIcNumber(e.target.value)} className="border p-2 w-full rounded focus:ring-2 focus:ring-teal-500" required />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Profile Picture</label>
-            <input id="avatarInput" type="file" accept="image/jpeg, image/png" onChange={(e) => setAvatarFile(e.target.files[0])} className="border p-1.5 w-full rounded text-sm" />
-          </div>
+
+        <div className="pt-6 border-t border-slate-100">
+          <Input 
+            label="System Password" 
+            type="text" 
+            value={password} 
+            onChange={(e) => setPassword(e.target.value)} 
+            required 
+            className="bg-red-50/30"
+          />
+          <p className="mt-2 text-[10px] font-bold text-red-400 uppercase tracking-widest">High-Security Field</p>
         </div>
-        <div className="mt-6 pt-4 border-t border-slate-100">
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1 text-red-500">System Password</label>
-          <input type="text" value={password} onChange={(e) => setPassword(e.target.value)} className="border p-2 w-full rounded focus:ring-2 focus:ring-red-400 bg-red-50" required />
-        </div>
-        <button type="submit" disabled={isUploading} className="w-full bg-teal-600 text-white font-bold py-3 rounded-lg shadow hover:bg-teal-700 mt-6 disabled:bg-teal-400">
-          {isUploading ? "Provisioning..." : "Provision Complete Staff Identity"}
-        </button>
+
+        <Button 
+          variant="primary" 
+          type="submit" 
+          disabled={isUploading} 
+          className="w-full mt-6"
+        >
+          {isUploading ? (
+            <>
+              <ArrowPathIcon className="w-5 h-5 animate-spin" />
+              Provisioning...
+            </>
+          ) : (
+            <>
+              <CheckCircleIcon className="w-5 h-5" />
+              Provision Complete Staff Identity
+            </>
+          )}
+        </Button>
       </form>
-    </div>
+    </Card>
   );
 }
