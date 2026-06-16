@@ -45,12 +45,14 @@ const NAV_ITEMS = [
     icon: QrCodeIcon,
     allowedRoles: ["headmaster", "asset_teacher"]
   },
+  /*
   {
     id: "hydrological-simulator",
     label: "iHYDRO Simulation Panel",
     icon: VariableIcon,
     allowedRoles: ["superadmin", "headmaster"]
   },
+  */
   {
     id: "school",
     label: "School Profile",
