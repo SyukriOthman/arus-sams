@@ -21,6 +21,18 @@ const NAV_ITEMS = [
     icon: ShieldCheckIcon,
     allowedRoles: ["superadmin"]
   },
+    {
+    id: "asset-master-list",
+    label: "Master Asset List",
+    icon: ArchiveBoxIcon,
+    allowedRoles: ["headmaster", "asset_teacher", "standard_teacher"]
+  }, 
+  {
+    id: "asset-registration",
+    label: "Asset Registration",
+    icon: PencilSquareIcon,
+    allowedRoles: ["headmaster", "asset_teacher"]
+  },
   {
     id: "locations",
     label: "Location Manager",
@@ -51,18 +63,6 @@ const NAV_ITEMS = [
     icon: UsersIcon,
     allowedRoles: ["headmaster"],
     hasDivider: true
-  },
-  {
-    id: "asset-master-list",
-    label: "Master Asset List",
-    icon: ArchiveBoxIcon,
-    allowedRoles: ["headmaster", "asset_teacher", "standard_teacher"]
-  },
-  {
-    id: "asset-registration",
-    label: "Asset Registration",
-    icon: PencilSquareIcon,
-    allowedRoles: ["headmaster", "asset_teacher"]
   }
 ];
 
