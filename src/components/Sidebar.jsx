@@ -16,6 +16,12 @@ import {
 
 const NAV_ITEMS = [
   {
+    id: "super-dashboard",
+    label: "Ministry Portal",
+    icon: ShieldCheckIcon,
+    allowedRoles: ["superadmin"]
+  },
+  {
     id: "locations",
     label: "Location Manager",
     icon: MapPinIcon,
@@ -57,12 +63,6 @@ const NAV_ITEMS = [
     label: "Asset Registration",
     icon: PencilSquareIcon,
     allowedRoles: ["headmaster", "asset_teacher"]
-  },
-  {
-    id: "super-dashboard",
-    label: "Ministry Portal",
-    icon: ShieldCheckIcon,
-    allowedRoles: ["superadmin"]
   }
 ];
 
