@@ -11,7 +11,8 @@ import {
   ChevronDownIcon,
   ArrowsUpDownIcon,
   CheckCircleIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  TrashIcon
 } from "@heroicons/react/24/outline";
 import { supabase } from "../../supabaseClient";
 import EditAssetModal from "./EditAssetModal";
@@ -238,8 +239,6 @@ function QrModal({ asset, locationPath, schoolName, onClose }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-const TABS = ["All", "Operational", "Pending Action", "In Repair", "Written Off"];
-
 export default function AssetMasterList({ schoolId, userRole, navigate }) {
   const [assets, setAssets] = useState([]);
   const [locationPaths, setLocationPaths] = useState({});
@@ -260,6 +259,16 @@ export default function AssetMasterList({ schoolId, userRole, navigate }) {
   const [sortDir, setSortDir] = useState("asc");
 
   const canEdit = userRole === "headmaster" || userRole === "asset_teacher";
+
+  // Dynamically generate tabs based on user role
+  const TABS = useMemo(() => {
+    const base = ["All", "Operational", "Pending Action", "In Repair", "Written Off"];
+    if (userRole === "headmaster") {
+      // Insert the special Disposal Requests tab at index 3
+      base.splice(3, 0, "Disposal Requests");
+    }
+    return base;
+  }, [userRole]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -284,6 +293,7 @@ export default function AssetMasterList({ schoolId, userRole, navigate }) {
       if (activeTab === "All") return true;
       if (activeTab === "Operational" && asset.status === "Active") return true;
       if (activeTab === "Pending Action" && (asset.status === "Audit Requested" || asset.status === "Disposal Requested")) return true;
+      if (activeTab === "Disposal Requests" && asset.status === "Disposal Requested") return true;
       if (activeTab === "In Repair" && (asset.status === "Under Maintenance" || asset.status === "Broken")) return true;
       if (activeTab === "Written Off" && (asset.status === "Lost" || asset.status === "Disposed")) return true;
 
@@ -390,6 +400,63 @@ export default function AssetMasterList({ schoolId, userRole, navigate }) {
       </html>
     `);
     printWindow.document.close();
+  };
+
+  const handleRequestDisposal = async (assetId, assetName) => {
+    const confirmDisposal = window.confirm(`Are you sure you want to request disposal for ${assetName}?`);
+    if (!confirmDisposal) return;
+
+    try {
+      const { error } = await supabase
+        .from("assets")
+        .update({ status: "Disposal Requested" })
+        .eq("asset_id", assetId);
+
+      if (error) throw error;
+      
+      alert(`Disposal requested for ${assetName}.`);
+      fetchData(); 
+    } catch (err) {
+      alert("Failed to request disposal: " + err.message);
+    }
+  };
+
+  const handleApproveDisposal = async (assetId, assetName) => {
+    const confirm = window.confirm(`Approve disposal for ${assetName}? This will permanently mark it as Disposed.`);
+    if (!confirm) return;
+
+    try {
+      const { error } = await supabase
+        .from("assets")
+        .update({ status: "Disposed" })
+        .eq("asset_id", assetId);
+
+      if (error) throw error;
+      
+      alert(`Disposal approved for ${assetName}.`);
+      fetchData(); 
+    } catch (err) {
+      alert("Failed to approve disposal: " + err.message);
+    }
+  };
+
+  const handleRejectDisposal = async (assetId, assetName) => {
+    const confirm = window.confirm(`Reject disposal request for ${assetName}? This will return it to Active status.`);
+    if (!confirm) return;
+
+    try {
+      const { error } = await supabase
+        .from("assets")
+        .update({ status: "Active" })
+        .eq("asset_id", assetId);
+
+      if (error) throw error;
+      
+      alert(`Disposal rejected for ${assetName}.`);
+      fetchData(); 
+    } catch (err) {
+      alert("Failed to reject disposal: " + err.message);
+    }
   };
 
   useEffect(() => {
@@ -678,33 +745,65 @@ export default function AssetMasterList({ schoolId, userRole, navigate }) {
                       {canEdit && (
                         <td className="px-6 py-4 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-1">
-                            {asset.qr_code_id ? (
-                              <button
-                                onClick={() => setQrModalAsset(asset)}
-                                title="View / Print QR Code"
-                                className="p-2 rounded-lg text-teal-600 hover:bg-teal-50 transition-colors"
-                              >
-                                <QrCodeIcon className="w-5 h-5" />
-                              </button>
+                            
+                            {/* Headmaster Disposal Approval Workflow */}
+                            {activeTab === "Disposal Requests" && userRole === "headmaster" ? (
+                              <>
+                                <button
+                                  onClick={() => handleApproveDisposal(asset.asset_id, asset.asset_name)}
+                                  className="p-2 rounded-lg text-green-600 hover:bg-green-50 transition-colors"
+                                  title="Approve Disposal"
+                                >
+                                  <CheckCircleIcon className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => handleRejectDisposal(asset.asset_id, asset.asset_name)}
+                                  className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                                  title="Reject Disposal"
+                                >
+                                  <XMarkIcon className="w-5 h-5" />
+                                </button>
+                              </>
                             ) : (
-                              <Button
-                                onClick={() => handleGenerateQR(asset.asset_id)}
-                                disabled={generatingQrFor === asset.asset_id}
-                                variant="secondary"
-                                className="px-3 py-1.5 text-xs h-8"
-                              >
-                                {generatingQrFor === asset.asset_id
-                                  ? "..."
-                                  : "Generate QR"}
-                              </Button>
+                              <>
+                                {/* Existing Actions: QR, Edit, Request Disposal */}
+                                {asset.qr_code_id ? (
+                                  <button
+                                    onClick={() => setQrModalAsset(asset)}
+                                    title="View / Print QR Code"
+                                    className="p-2 rounded-lg text-teal-600 hover:bg-teal-50 transition-colors"
+                                  >
+                                    <QrCodeIcon className="w-5 h-5" />
+                                  </button>
+                                ) : (
+                                  <Button
+                                    onClick={() => handleGenerateQR(asset.asset_id)}
+                                    disabled={generatingQrFor === asset.asset_id}
+                                    variant="secondary"
+                                    className="px-3 py-1.5 text-xs h-8"
+                                  >
+                                    {generatingQrFor === asset.asset_id ? "..." : "Generate QR"}
+                                  </Button>
+                                )}
+                                <button
+                                  onClick={() => setEditingAsset(asset)}
+                                  className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+                                  title="Edit"
+                                >
+                                  <PencilSquareIcon className="w-5 h-5" />
+                                </button>
+                                
+                                {asset.status !== "Disposal Requested" && asset.status !== "Disposed" && asset.status !== "Lost" && (
+                                  <button
+                                    onClick={() => handleRequestDisposal(asset.asset_id, asset.asset_name)}
+                                    className="p-2 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                                    title="Request Disposal"
+                                  >
+                                    <TrashIcon className="w-5 h-5" />
+                                  </button>
+                                )}
+                              </>
                             )}
-                            <button
-                              onClick={() => setEditingAsset(asset)}
-                              className="p-2 rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
-                              title="Edit"
-                            >
-                              <PencilSquareIcon className="w-5 h-5" />
-                            </button>
                           </div>
                         </td>
                       )}
