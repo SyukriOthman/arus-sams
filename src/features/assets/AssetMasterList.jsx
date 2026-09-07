@@ -262,7 +262,7 @@ export default function AssetMasterList({ schoolId, userRole, navigate }) {
 
   // Dynamically generate tabs based on user role
   const TABS = useMemo(() => {
-    const base = ["All", "Operational", "Pending Action", "In Repair", "Written Off"];
+    const base = ["All", "Operational", "Request for Audit", "In Repair", "Written Off"];
     if (userRole === "headmaster") {
       // Insert the special Disposal Requests tab at index 3
       base.splice(3, 0, "Disposal Requests");
@@ -292,7 +292,7 @@ export default function AssetMasterList({ schoolId, userRole, navigate }) {
       // Status Tab Filter
       if (activeTab === "All") return true;
       if (activeTab === "Operational" && asset.status === "Active") return true;
-      if (activeTab === "Pending Action" && (asset.status === "Audit Requested" || asset.status === "Disposal Requested")) return true;
+      if (activeTab === "Request for Audit" && asset.status === "Audit Requested") return true;
       if (activeTab === "Disposal Requests" && asset.status === "Disposal Requested") return true;
       if (activeTab === "In Repair" && (asset.status === "Under Maintenance" || asset.status === "Broken")) return true;
       if (activeTab === "Written Off" && (asset.status === "Lost" || asset.status === "Disposed")) return true;
