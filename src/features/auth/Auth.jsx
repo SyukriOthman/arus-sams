@@ -122,7 +122,7 @@ export default function Auth({ onDemoLogin, navigate }) {
               disabled={loading}
               className="w-full bg-teal-600 text-white py-3 rounded-lg font-bold hover:bg-teal-700 transition-colors shadow-md"
             >
-              {loading ? "Authenticating..." : "Secure Login"}
+              {loading ? "Authenticating..." : "User Login"}
             </button>
           </form>
 
