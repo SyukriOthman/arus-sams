@@ -44,6 +44,91 @@ function getLocationHierarchy(locationObj, locationMap) {
   };
 }
 
+// Pure async helper outside component (no setState inside)
+async function loadEvacuationOrdersData(schoolId) {
+  const [ordersRes, locationsRes] = await Promise.all([
+    supabase
+      .from("evacuation_orders")
+      .select(
+        `
+        order_id,
+        asset_id,
+        priority_rank,
+        mcda_score,
+        status,
+        handled_by_name,
+        created_at,
+        updated_at,
+        assets (
+          asset_name,
+          criticality_level,
+          acquisition_price
+        ),
+        from_location:locations!evacuation_orders_from_location_id_fkey (
+          location_id,
+          location_name,
+          parent_location_id
+        ),
+        target_location:locations!evacuation_orders_target_location_id_fkey (
+          location_id,
+          location_name,
+          parent_location_id
+        )
+      `,
+      )
+      .eq("school_id", schoolId)
+      .neq("status", "cancelled")
+      .neq("status", "returned")
+      .order("priority_rank", { ascending: true }),
+
+    supabase
+      .from("locations")
+      .select("location_id, location_name, parent_location_id")
+      .eq("school_id", schoolId),
+  ]);
+
+  if (ordersRes.error) throw ordersRes.error;
+  if (locationsRes.error) throw locationsRes.error;
+
+  const rawOrders = ordersRes.data || [];
+
+  // Isolate only the current/latest evacuation wave so prior emergencies don't mix in
+  const activeWaveOrders = rawOrders.filter((o) =>
+    ["pending", "in_progress"].includes(o.status),
+  );
+
+  let currentWaveOrders = rawOrders;
+  if (activeWaveOrders.length > 0) {
+    const earliestActiveMs = Math.min(
+      ...activeWaveOrders.map((o) =>
+        o.created_at ? new Date(o.created_at).getTime() : 0,
+      ),
+    );
+    currentWaveOrders = rawOrders.filter((o) => {
+      const orderMs = o.created_at ? new Date(o.created_at).getTime() : 0;
+      return orderMs >= earliestActiveMs - 10000;
+    });
+  } else if (rawOrders.length > 0) {
+    // When 100% evacuated, show only the most recently completed wave
+    const latestCompletedMs = Math.max(
+      ...rawOrders.map((o) =>
+        o.created_at ? new Date(o.created_at).getTime() : 0,
+      ),
+    );
+    currentWaveOrders = rawOrders.filter((o) => {
+      const orderMs = o.created_at ? new Date(o.created_at).getTime() : 0;
+      return orderMs >= latestCompletedMs - 10000;
+    });
+  }
+
+  const locLookup = {};
+  (locationsRes.data || []).forEach((loc) => {
+    locLookup[loc.location_id] = loc;
+  });
+
+  return { orders: currentWaveOrders, locationMap: locLookup };
+}
+
 export default function EvacuationTracker({
   schoolId,
   userRole = "",
@@ -70,86 +155,10 @@ export default function EvacuationTracker({
     setActionError(null);
 
     try {
-      const [ordersRes, locationsRes] = await Promise.all([
-        supabase
-          .from("evacuation_orders")
-          .select(
-            `
-            order_id,
-            asset_id,
-            priority_rank,
-            status,
-            handled_by_name,
-            created_at,
-            updated_at,
-            assets (
-              asset_name,
-              criticality_level
-            ),
-            from_location:locations!evacuation_orders_from_location_id_fkey (
-              location_id,
-              location_name,
-              parent_location_id
-            ),
-            target_location:locations!evacuation_orders_target_location_id_fkey (
-              location_id,
-              location_name,
-              parent_location_id
-            )
-          `,
-          )
-          .eq("school_id", schoolId)
-          .neq("status", "cancelled") // Hide stood-down orders
-          .neq("status", "returned")  // Hide orders whose assets have been returned home
-          .order("priority_rank", { ascending: true }),
-
-        supabase
-          .from("locations")
-          .select("location_id, location_name, parent_location_id")
-          .eq("school_id", schoolId),
-      ]);
-
-      if (ordersRes.error) throw ordersRes.error;
-      if (locationsRes.error) throw locationsRes.error;
-
-      const rawOrders = ordersRes.data || [];
-
-      // Isolate only the current/latest evacuation wave so prior emergencies don't mix in
-      const activeWaveOrders = rawOrders.filter((o) =>
-        ["pending", "in_progress"].includes(o.status),
-      );
-
-      let currentWaveOrders = rawOrders;
-      if (activeWaveOrders.length > 0) {
-        const earliestActiveMs = Math.min(
-          ...activeWaveOrders.map((o) =>
-            o.created_at ? new Date(o.created_at).getTime() : 0,
-          ),
-        );
-        currentWaveOrders = rawOrders.filter((o) => {
-          const orderMs = o.created_at ? new Date(o.created_at).getTime() : 0;
-          return orderMs >= earliestActiveMs - 10000;
-        });
-      } else if (rawOrders.length > 0) {
-        // When 100% evacuated, show only the most recently completed wave
-        const latestCompletedMs = Math.max(
-          ...rawOrders.map((o) =>
-            o.created_at ? new Date(o.created_at).getTime() : 0,
-          ),
-        );
-        currentWaveOrders = rawOrders.filter((o) => {
-          const orderMs = o.created_at ? new Date(o.created_at).getTime() : 0;
-          return orderMs >= latestCompletedMs - 10000;
-        });
-      }
-
-      const locLookup = {};
-      (locationsRes.data || []).forEach((loc) => {
-        locLookup[loc.location_id] = loc;
-      });
-
+      const { orders: waveOrders, locationMap: locLookup } =
+        await loadEvacuationOrdersData(schoolId);
       setLocationMap(locLookup);
-      setOrders(currentWaveOrders);
+      setOrders(waveOrders);
     } catch (error) {
       console.error("Error fetching evacuation orders:", error.message);
       setActionError("Failed to load live evacuation orders. Please refresh.");
@@ -161,11 +170,31 @@ export default function EvacuationTracker({
   // Initial load + Supabase Realtime subscription for live multi-teacher sync
   useEffect(() => {
     if (!schoolId) return;
+    let ignore = false;
 
-    fetchOrders();
+    const syncFromServer = () => {
+      loadEvacuationOrdersData(schoolId)
+        .then(({ orders: waveOrders, locationMap: locLookup }) => {
+          if (ignore) return;
+          setLocationMap(locLookup);
+          setOrders(waveOrders);
+          setActionError(null);
+        })
+        .catch((error) => {
+          if (ignore) return;
+          console.error("Error fetching evacuation orders:", error.message);
+          setActionError(
+            "Failed to load live evacuation orders. Please refresh.",
+          );
+        })
+        .finally(() => {
+          if (!ignore) setLoading(false);
+        });
+    };
 
-    const handleCustomEvent = () => fetchOrders();
-    window.addEventListener("evacuation_generated", handleCustomEvent);
+    syncFromServer();
+
+    window.addEventListener("evacuation_generated", syncFromServer);
 
     const channel = supabase
       .channel(`tracker-orders-${schoolId}`)
@@ -178,16 +207,17 @@ export default function EvacuationTracker({
           filter: `school_id=eq.${schoolId}`,
         },
         () => {
-          fetchOrders();
+          syncFromServer();
         },
       )
       .subscribe();
 
     return () => {
-      window.removeEventListener("evacuation_generated", handleCustomEvent);
+      ignore = true;
+      window.removeEventListener("evacuation_generated", syncFromServer);
       supabase.removeChannel(channel);
     };
-  }, [schoolId, fetchOrders]);
+  }, [schoolId]);
 
   // Update a single asset's evacuation status ("in_progress", "evacuated", or "pending")
   const handleStatusChange = async (orderId, nextStatus) => {
@@ -442,6 +472,21 @@ export default function EvacuationTracker({
           </div>
         </div>
 
+        {/* MCDA Ranking Justification Note */}
+        <div className="px-4 py-2.5 bg-teal-50/60 border-b border-teal-100 text-xs text-slate-600 flex flex-wrap items-center justify-between gap-2">
+          <span>
+            <strong className="text-teal-800">
+              MCDA Priority Justification:
+            </strong>{" "}
+            Ranked by weighted score (50% Elevation Risk + 30% Criticality + 20%
+            Value) and routed to same-block safe zones first with capacity
+            overflow.
+          </span>
+          <span className="font-mono text-[11px] text-teal-700 font-semibold">
+            Higher score = Earlier evacuation
+          </span>
+        </div>
+
         {/* Evacuation Routing Table */}
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -452,6 +497,9 @@ export default function EvacuationTracker({
                 </th>
                 <th className="p-4 text-xs font-bold text-slate-500 uppercase">
                   Asset & Tag ID
+                </th>
+                <th className="p-4 text-xs font-bold text-slate-500 uppercase">
+                  MCDA Score
                 </th>
                 <th className="p-4 text-xs font-bold text-slate-500 uppercase">
                   Evacuation Route (From ➔ To)
@@ -468,7 +516,7 @@ export default function EvacuationTracker({
               {filteredOrders.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="p-8 text-center text-sm text-slate-500"
                   >
                     No evacuation tasks match the current room or status filter.
@@ -533,7 +581,35 @@ export default function EvacuationTracker({
                         </div>
                       </td>
 
-                      {/* Col 3: From -> To Spatial Route */}
+                      {/* Col 3: MCDA Score & Justification */}
+                      <td className="p-4 align-top">
+                        <div className="font-mono text-sm font-bold text-teal-700">
+                          {order.mcda_score != null
+                            ? Number(order.mcda_score).toFixed(4)
+                            : "—"}
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-0.5 space-y-0.5">
+                          <div>
+                            Crit:{" "}
+                            <span className="font-semibold text-slate-700">
+                              {order.assets?.criticality_level ?? 3}/5
+                            </span>
+                          </div>
+                          {order.assets?.acquisition_price != null && (
+                            <div>
+                              Val:{" "}
+                              <span className="font-semibold text-slate-700">
+                                RM{" "}
+                                {Number(
+                                  order.assets.acquisition_price,
+                                ).toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Col 4: From -> To Spatial Route */}
                       <td className="p-4 align-top">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                           {/* Origin Room */}
@@ -566,7 +642,7 @@ export default function EvacuationTracker({
                         </div>
                       </td>
 
-                      {/* Col 4: Status Badge + Staff Attribution */}
+                      {/* Col 5: Status Badge + Staff Attribution */}
                       <td className="p-4 align-top">
                         {isEvacuated ? (
                           <div>
@@ -612,7 +688,7 @@ export default function EvacuationTracker({
                         )}
                       </td>
 
-                      {/* Col 5: Interactive Task Buttons */}
+                      {/* Col 6: Interactive Task Buttons */}
                       <td className="p-4 align-top text-right">
                         {!isEvacuated && !isCancelled && (
                           <div className="inline-flex flex-wrap justify-end gap-2">

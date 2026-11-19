@@ -134,6 +134,8 @@ export function useFloodDashboard(schoolId) {
   };
 
   const handleGenerateEvacuationPlan = async () => {
+    if (!schoolId) return;
+
     const confirmTrigger = window.confirm(
       "CRITICAL ACTION: Are you sure you want to trigger the flood evacuation plan? This will immediately notify teachers and assign assets to safe rooms."
     );
@@ -143,10 +145,13 @@ export function useFloodDashboard(schoolId) {
     try {
       const { data, error } = await supabase.rpc("generate_evacuation_plan", {
         p_school_id: schoolId,
+        p_w_elevation: 0.5,
+        p_w_criticality: 0.3,
+        p_w_price: 0.2,
       });
       if (error) throw error;
 
-      setEvacuationPlan(data);
+      setEvacuationPlan(data || []);
       alert(
         "Evacuation Plan generated successfully! Ground staff can now view their tasks."
       );

@@ -6,13 +6,13 @@ import { useFloodDashboard } from "./useFloodDashboard";
 
 export default function SchoolFloodDashboard({ schoolId, userRole }) {
   const {
-    telemetry,
-    loading,
-    isSyncing,
-    isGeneratingPlan,
-    handleForceSync,
-    handleGenerateEvacuationPlan,
-  } = useFloodDashboard(schoolId);
+  telemetry,
+  loading,
+  isSyncing,
+  isGeneratingPlan,
+  handleForceSync,
+  handleGenerateEvacuationPlan,
+} = useFloodDashboard(schoolId);
 
   if (loading && !isSyncing) {
     return (
